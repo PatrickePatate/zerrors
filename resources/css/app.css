@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/*
+ * Livewire normally injects these itself, but we disabled `inject_assets`
+ * (config/livewire.php) in favor of manually bundling its JS via Vite —
+ * `wire:loading`/`wire:dirty`/`wire:cloak` still depend on this base CSS
+ * to stay hidden until Livewire's JS toggles them during a request.
+ */
+[wire\:loading],
+[wire\:loading\.delay],
+[wire\:loading\.inline-block],
+[wire\:loading\.inline],
+[wire\:loading\.block],
+[wire\:loading\.flex],
+[wire\:loading\.table],
+[wire\:loading\.grid],
+[wire\:loading\.inline-flex] {
+    display: none;
+}
+
+[wire\:offline] {
+    display: none;
+}
+
+[wire\:dirty]:not(textarea):not(input):not(select) {
+    display: none;
+}
+
+[wire\:cloak] {
+    display: none !important;
+}
+
+code[class*='language-'] {
+    color: inherit;
+    background: none;
+    font-family: inherit;
+    text-shadow: none;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #9ca3af;
+}
+
+.token.keyword,
+.token.selector,
+.token.attr-name {
+    color: #7c3aed;
+}
+
+.token.string,
+.token.attr-value,
+.token.char {
+    color: #059669;
+}
+
+.token.number,
+.token.boolean,
+.token.constant {
+    color: #d97706;
+}
+
+.token.variable {
+    color: #dc2626;
+}
+
+.token.function,
+.token.class-name {
+    color: #2563eb;
+}
+
+.token.operator,
+.token.punctuation {
+    color: #6b7280;
+}
