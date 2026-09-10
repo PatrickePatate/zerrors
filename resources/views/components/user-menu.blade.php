@@ -5,9 +5,10 @@
         <x-slot:trigger>
             <button type="button" class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-gray-50">
                 <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="h-7 w-7 shrink-0 rounded-full object-cover">
-                <span class="min-w-0 flex-1">
+                <div class="min-w-0 flex-1">
                     <span class="block truncate text-sm font-medium text-gray-800">{{ $user->name }}</span>
-                </span>
+                    <span class="block truncate text-sm font-light text-gray-600">{{ $user->email }}</span>
+                </div>
                 <x-lucide-chevrons-up-down class="h-4 w-4 shrink-0 text-gray-400" />
             </button>
         </x-slot:trigger>
