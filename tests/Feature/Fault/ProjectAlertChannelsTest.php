@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Fault;
 
+use App\Enums\NotificationRuleTrigger;
 use App\Jobs\Fault\ProcessFaultEvent;
+use App\Models\FaultIssue;
 use App\Models\FaultProject;
+use App\Models\NotificationChannel;
 use App\Models\Organization;
-use App\Notifications\Fault\IssueCreatedNotification;
+use App\Notifications\Fault\IssueAlertNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -25,15 +28,15 @@ class ProjectAlertChannelsTest extends TestCase
         ];
     }
 
-    public function test_a_new_issue_posts_to_a_configured_slack_webhook(): void
+    public function test_a_new_issue_posts_to_a_slack_channel_with_a_new_issue_rule(): void
     {
         Http::fake();
 
         $organization = Organization::factory()->create(['alerts_enabled' => false]);
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'slack_webhook_url' => 'https://hooks.slack.com/services/x',
-        ]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
 
@@ -41,16 +44,15 @@ class ProjectAlertChannelsTest extends TestCase
             && str_contains($request['text'], 'New issue'));
     }
 
-    public function test_a_new_issue_posts_to_a_configured_telegram_chat(): void
+    public function test_a_new_issue_posts_to_a_telegram_channel_with_a_new_issue_rule(): void
     {
         Http::fake();
 
         $organization = Organization::factory()->create(['alerts_enabled' => false]);
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'telegram_bot_token' => '123456:ABC',
-            'telegram_chat_id' => '-100999',
-        ]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->telegram('123456:ABC', '-100999')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
 
@@ -58,21 +60,145 @@ class ProjectAlertChannelsTest extends TestCase
             && $request['chat_id'] === '-100999');
     }
 
-    public function test_a_new_issue_emails_the_configured_project_address(): void
+    public function test_a_new_issue_emails_a_channel_with_a_new_issue_rule(): void
     {
         Notification::fake();
 
         $organization = Organization::factory()->create(['alerts_enabled' => false]);
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'notify_email' => 'alerts@example.com',
-        ]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->email('alerts@example.com')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
 
         Notification::assertSentOnDemand(
-            IssueCreatedNotification::class,
+            IssueAlertNotification::class,
             fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'alerts@example.com'
         );
+    }
+
+    public function test_a_disabled_channel_never_fires(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create(['enabled' => false]);
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_a_disabled_rule_never_fires(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue, 'enabled' => false]);
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
+
+        Http::assertNothingSent();
+    }
+
+    public function test_an_every_event_rule_fires_on_every_occurrence(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::EveryEvent]);
+
+        $fingerprint = ['same-issue'];
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+            'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => $fingerprint,
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+        ]);
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+            'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => $fingerprint,
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+        ]);
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_an_occurrence_threshold_rule_only_fires_on_matching_counts(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create([
+            'trigger' => NotificationRuleTrigger::OccurrenceThreshold,
+            'thresholds' => [1, 3],
+        ]);
+
+        $fingerprint = ['same-issue'];
+        for ($i = 0; $i < 3; $i++) {
+            ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+                'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => $fingerprint,
+                'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+            ]);
+        }
+
+        // 1st and 3rd occurrence match the thresholds list; the 2nd does not.
+        Http::assertSentCount(2);
+    }
+
+    public function test_a_regression_rule_does_not_fire_for_a_plain_repeat_of_an_unresolved_issue(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::Regression]);
+
+        $fingerprint = ['same-issue'];
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+            'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => $fingerprint,
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+        ]);
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+            'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => $fingerprint,
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+        ]);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_a_regression_rule_fires_when_a_resolved_issue_reoccurs(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        FaultIssue::factory()->create([
+            'fault_project_id' => $project->id,
+            'status' => 'resolved',
+            'fingerprint' => sha1('same-issue'),
+        ]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('https://hooks.slack.com/services/x')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::Regression]);
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
+            'event_id' => Str::random(10), 'level' => 'error', 'fingerprint' => ['same-issue'],
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'again']]],
+        ]);
+
+        Http::assertSent(fn ($request) => str_contains($request['text'], 'Issue regressed'));
     }
 }
