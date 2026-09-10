@@ -15,7 +15,7 @@
                         @continue(empty($user[$key]))
                         <div class="flex gap-2">
                             <dt class="w-28 shrink-0 text-gray-400">{{ ucfirst(str_replace('_', ' ', $key)) }}</dt>
-                            <dd class="text-gray-700">{{ $user[$key] }}</dd>
+                            <dd class="text-gray-700">{{ is_scalar($user[$key]) ? $user[$key] : json_encode($user[$key]) }}</dd>
                         </div>
                     @endforeach
                 </dl>
@@ -44,7 +44,7 @@
                     @foreach(($request['headers'] ?? []) as $key => $value)
                         <div class="flex gap-2">
                             <dt class="w-28 shrink-0 text-gray-400">{{ $key }}</dt>
-                            <dd class="break-all text-gray-700">{{ $value }}</dd>
+                            <dd class="break-all text-gray-700">{{ is_scalar($value) ? $value : json_encode($value) }}</dd>
                         </div>
                     @endforeach
                 </dl>
