@@ -1,5 +1,6 @@
 import { Livewire, Alpine } from '../../vendor/livewire/livewire/dist/livewire.esm';
 import collapse from '@alpinejs/collapse';
+import Clipboard from '@ryangjchandler/alpine-clipboard';
 import Prism from 'prismjs';
 
 // window.livewireScriptConfig is set inline in the layout <head> (before this
@@ -9,6 +10,80 @@ import Prism from 'prismjs';
 // Livewire's own DOMContentLoaded auto-start, so we start it ourselves here.
 document.addEventListener('alpine:init', () => {
     Alpine.plugin(collapse);
+    Alpine.plugin(Clipboard);
+
+    // Backs the <x-form.select> component: a Pines-style custom dropdown
+    // that stays wireable by mirroring its value onto a hidden native
+    // input and firing input/change events so wire:model / wire:change
+    // (and plain form submits) work exactly like a real <select>.
+    Alpine.data('formSelect', (items, selected) => ({
+        open: false,
+        items,
+        selectedValue: selected,
+        activeItem: null,
+        id: null,
+
+        init() {
+            this.id = this.$id('form-select');
+            this.activeItem = this.selectedItem;
+        },
+
+        get selectedItem() {
+            return this.items.find((item) => item.value === this.selectedValue) ?? null;
+        },
+
+        isActive(item) {
+            return this.activeItem !== null && this.activeItem.value === item.value;
+        },
+
+        select(item) {
+            if (item.disabled) {
+                return;
+            }
+
+            this.selectedValue = item.value;
+            this.activeItem = item;
+            this.open = false;
+            this.$refs.hidden.value = item.value;
+            this.$refs.hidden.dispatchEvent(new Event('input', { bubbles: true }));
+            this.$refs.hidden.dispatchEvent(new Event('change', { bubbles: true }));
+            this.$refs.button.focus();
+        },
+
+        openAndActivateSelected() {
+            this.activeItem = this.selectedItem ?? this.items.find((item) => !item.disabled) ?? null;
+            this.open = true;
+        },
+
+        activateNext() {
+            const enabled = this.items.filter((item) => !item.disabled);
+            const index = enabled.indexOf(this.activeItem);
+            if (index < enabled.length - 1) {
+                this.activeItem = enabled[index + 1];
+                this.scrollToActive();
+            }
+        },
+
+        activatePrevious() {
+            const enabled = this.items.filter((item) => !item.disabled);
+            const index = enabled.indexOf(this.activeItem);
+            if (index > 0) {
+                this.activeItem = enabled[index - 1];
+                this.scrollToActive();
+            }
+        },
+
+        scrollToActive() {
+            this.$nextTick(() => {
+                const el = this.activeItem && document.getElementById(this.activeItem.value + '-' + this.id);
+                if (!el || !this.$refs.list) {
+                    return;
+                }
+                const newScroll = (el.offsetTop + el.offsetHeight) - this.$refs.list.offsetHeight;
+                this.$refs.list.scrollTop = newScroll > 0 ? newScroll : 0;
+            });
+        },
+    }));
 });
 
 Livewire.start();

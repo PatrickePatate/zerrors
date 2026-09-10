@@ -9,7 +9,7 @@
         </p>
         <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
             @csrf
-            <x-input label="Email" type="email" name="email" value="{{ old('email') }}" :error="$errors->first('email')" required autofocus />
+            <x-form.text-input label="Email" type="email" name="email" value="{{ old('email') }}" :error="$errors->first('email')" required autofocus />
             <x-button type="submit" class="w-full">Email password reset link</x-button>
         </form>
     </x-card>

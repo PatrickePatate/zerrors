@@ -9,20 +9,14 @@
         <form wire:submit="save" class="space-y-4">
             <div class="flex items-end gap-3">
                 <div class="max-w-xs flex-1">
-                    <x-input label="Name" name="name" wire:model="name" :error="$errors->first('name')" required />
+                    <x-form.text-input label="Name" name="name" wire:model="name" :error="$errors->first('name')" required />
                 </div>
             </div>
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" wire:model="alertsEnabled" class="rounded border-gray-300 text-gray-900 focus:ring-gray-900/10">
-                Email organization members when a new issue appears or a resolved one regresses
-            </label>
+            <x-form.checkbox wire:model="alertsEnabled">Email organization members when a new issue appears or a resolved one regresses</x-form.checkbox>
             <p class="text-xs text-gray-400">
                 Slack, Telegram, and per-project alert email are configured per project — see a project's "Edit project" &rarr; Notifications tab.
             </p>
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" wire:model="require2fa" class="rounded border-gray-300 text-gray-900 focus:ring-gray-900/10">
-                Require two-factor authentication for all members
-            </label>
+            <x-form.checkbox wire:model="require2fa">Require two-factor authentication for all members</x-form.checkbox>
             <x-button type="submit" wire:loading.attr="disabled">Save</x-button>
         </form>
     </x-card>

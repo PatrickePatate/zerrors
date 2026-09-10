@@ -10,7 +10,7 @@
         <form method="POST" action="{{ route('organizations.store') }}" class="flex items-end gap-3">
             @csrf
             <div class="max-w-xs flex-1">
-                <x-input name="name" placeholder="Acme Inc." :error="$errors->first('name')" required />
+                <x-form.text-input name="name" placeholder="Acme Inc." :error="$errors->first('name')" required />
             </div>
             <x-button type="submit">Create</x-button>
         </form>

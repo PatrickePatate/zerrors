@@ -12,22 +12,17 @@
 
         <form wire:submit="save" class="flex flex-wrap items-end gap-3">
             <div class="w-40">
-                <label for="aiProvider" class="mb-1 block text-sm font-medium text-gray-700">Provider</label>
-                <select id="aiProvider" wire:model="aiProvider" required
-                        class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                    <option value="">Choose one</option>
-                    @foreach(\App\Models\Organization::AI_PROVIDERS as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+                <x-form.select label="Provider" id="aiProvider" wire:model="aiProvider" required
+                                :options="['' => 'Choose one', ...\App\Models\Organization::AI_PROVIDERS]"
+                                :selected="$aiProvider" />
             </div>
             <div class="max-w-xs flex-1">
-                <x-input label="API key" type="password" name="aiApiKey" wire:model="aiApiKey" autocomplete="off"
+                <x-form.text-input label="API key" type="password" name="aiApiKey" wire:model="aiApiKey" autocomplete="off"
                           placeholder="{{ $organization->hasAiConfigured() ? 'Configured — leave blank to keep it' : 'sk-...' }}"
                           :error="$errors->first('aiApiKey')" />
             </div>
             <div class="w-48">
-                <x-input label="Model (optional)" name="aiModel" wire:model="aiModel" placeholder="Provider default" />
+                <x-form.text-input label="Model (optional)" name="aiModel" wire:model="aiModel" placeholder="Provider default" />
             </div>
             <x-button type="submit" wire:loading.attr="disabled">Save</x-button>
         </form>

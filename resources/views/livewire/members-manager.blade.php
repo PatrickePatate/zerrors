@@ -13,14 +13,10 @@
 
                 <h2 class="mb-4 text-sm font-medium text-gray-700">Invite someone</h2>
                 <form wire:submit="invite" class="space-y-4">
-                    <x-input label="Email" name="email" type="email" wire:model="email" :error="$errors->first('email')" required autofocus />
-                    <div>
-                        <label for="role" class="mb-1 block text-sm font-medium text-gray-700">Role</label>
-                        <select id="role" wire:model="role" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                            <option value="member">Member</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
+                    <x-form.text-input label="Email" name="email" type="email" wire:model="email" :error="$errors->first('email')" required autofocus />
+                    <x-form.select label="Role" id="role" wire:model="role"
+                                    :options="['member' => 'Member', 'admin' => 'Admin']"
+                                    :selected="$role" />
                     <div class="flex justify-end gap-2">
                         <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
                         <x-button type="submit" wire:loading.attr="disabled">Send invite</x-button>
@@ -59,14 +55,11 @@
                         <td class="px-5 py-3 text-gray-500">{{ $member->email }}</td>
                         <td class="px-5 py-3">
                             @if($canEditRole)
-                                <select wire:change="updateRole({{ $member->id }}, $event.target.value)"
-                                        class="rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                                    @if($this->myRole === 'owner')
-                                        <option value="owner" @selected($member->pivot->role === 'owner')>owner</option>
-                                    @endif
-                                    <option value="admin" @selected($member->pivot->role === 'admin')>admin</option>
-                                    <option value="member" @selected($member->pivot->role === 'member')>member</option>
-                                </select>
+                                <div class="w-28">
+                                    <x-form.select wire:change="updateRole({{ $member->id }}, $event.target.value)"
+                                                    :options="($this->myRole === 'owner' ? ['owner' => 'owner'] : []) + ['admin' => 'admin', 'member' => 'member']"
+                                                    :selected="$member->pivot->role" />
+                                </div>
                             @else
                                 <x-badge color="{{ $member->pivot->role === 'owner' ? 'indigo' : 'gray' }}">{{ $member->pivot->role }}</x-badge>
                             @endif

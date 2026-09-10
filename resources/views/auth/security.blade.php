@@ -33,7 +33,7 @@
                 @csrf
                 @method('DELETE')
                 <div class="max-w-xs">
-                    <x-input label="Current password" type="password" name="password" :error="$errors->first('password')" required />
+                    <x-form.text-input label="Current password" type="password" name="password" :error="$errors->first('password')" required />
                 </div>
                 <x-button type="submit" variant="secondary">Disable 2FA</x-button>
             </form>
@@ -48,7 +48,7 @@
                 <form method="POST" action="{{ route('two-factor.confirm') }}" class="flex items-end gap-3">
                     @csrf
                     <div class="w-40">
-                        <x-input label="Confirm code" name="code" :error="$errors->first('code')" required autofocus />
+                        <x-form.text-input label="Confirm code" name="code" :error="$errors->first('code')" required autofocus />
                     </div>
                     <x-button type="submit">Confirm & enable</x-button>
                 </form>
@@ -77,7 +77,7 @@
             <form method="POST" action="{{ route('security.tokens.store') }}" class="flex items-end gap-3">
                 @csrf
                 <div class="max-w-xs flex-1">
-                    <x-input label="Token name" name="name" placeholder="CI script" :error="$errors->first('name')" required />
+                    <x-form.text-input label="Token name" name="name" placeholder="CI script" :error="$errors->first('name')" required />
                 </div>
                 <x-button type="submit">Create token</x-button>
             </form>

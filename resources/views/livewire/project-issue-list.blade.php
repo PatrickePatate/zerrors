@@ -7,35 +7,22 @@
     <x-card class="mb-6">
         <div class="flex flex-wrap items-end gap-3">
             <div class="max-w-xs flex-1">
-                <label for="q" class="mb-1 block text-sm font-medium text-gray-700">Search</label>
-                <input type="text" id="q" wire:model.live.debounce.300ms="search" placeholder="Title, culprit, type&hellip;"
-                       class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
+                <x-form.text-input label="Search" name="q" wire:model.live.debounce.300ms="search" placeholder="Title, culprit, type&hellip;" />
             </div>
             <div class="w-36">
-                <label for="level" class="mb-1 block text-sm font-medium text-gray-700">Level</label>
-                <select id="level" wire:model.live="level" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                    <option value="">Any</option>
-                    @foreach(['error', 'warning', 'fatal', 'info'] as $option)
-                        <option value="{{ $option }}">{{ ucfirst($option) }}</option>
-                    @endforeach
-                </select>
+                <x-form.select label="Level" id="level" wire:model.live="level"
+                                :options="collect(['error', 'warning', 'fatal', 'info'])->mapWithKeys(fn ($option) => [$option => ucfirst($option)])->prepend('Any', '')"
+                                :selected="$level" />
             </div>
             <div class="w-36">
-                <label for="status" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                <select id="status" wire:model.live="status" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                    <option value="">Any</option>
-                    @foreach(['unresolved', 'resolved', 'ignored'] as $option)
-                        <option value="{{ $option }}">{{ ucfirst($option) }}</option>
-                    @endforeach
-                </select>
+                <x-form.select label="Status" id="status" wire:model.live="status"
+                                :options="collect(['unresolved', 'resolved', 'ignored'])->mapWithKeys(fn ($option) => [$option => ucfirst($option)])->prepend('Any', '')"
+                                :selected="$status" />
             </div>
             <div class="w-40">
-                <label for="assigned" class="mb-1 block text-sm font-medium text-gray-700">Assigned</label>
-                <select id="assigned" wire:model.live="assigned" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                    <option value="">Anyone</option>
-                    <option value="me">Me</option>
-                    <option value="unassigned">Unassigned</option>
-                </select>
+                <x-form.select label="Assigned" id="assigned" wire:model.live="assigned"
+                                :options="['' => 'Anyone', 'me' => 'Me', 'unassigned' => 'Unassigned']"
+                                :selected="$assigned" />
             </div>
             <div wire:loading class="text-sm text-gray-400">Filtering&hellip;</div>
             @if($search !== '' || $level !== '' || $status !== '' || $assigned !== '')
