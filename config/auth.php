@@ -114,4 +114,17 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Registration
+    |--------------------------------------------------------------------------
+    |
+    | Controls whether new users may self-register. When disabled, only
+    | users with a pending organization invite may still complete
+    | registration.
+    |
+    */
+
+    'registration_enabled' => env('REGISTRATION_ENABLED', true),
+
 ];

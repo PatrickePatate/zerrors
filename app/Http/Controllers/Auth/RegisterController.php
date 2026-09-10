@@ -16,11 +16,19 @@ class RegisterController extends Controller
 {
     public function create(Request $request): View
     {
-        return view('auth.register', ['invite' => $this->pendingInvite($request)]);
+        $invite = $this->pendingInvite($request);
+
+        abort_if(! $invite && ! config('auth.registration_enabled'), 403);
+
+        return view('auth.register', ['invite' => $invite]);
     }
 
     public function store(Request $request)
     {
+        $invite = $this->pendingInvite($request);
+
+        abort_if(! $invite && ! config('auth.registration_enabled'), 403);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
@@ -34,8 +42,6 @@ class RegisterController extends Controller
         ]);
 
         event(new Registered($user));
-
-        $invite = $this->pendingInvite($request);
 
         if ($invite) {
             $invite->organization->users()->syncWithoutDetaching([$user->id => ['role' => $invite->role]]);
