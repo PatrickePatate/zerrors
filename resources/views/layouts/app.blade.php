@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>@yield('title', 'Zerrors')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <script>
         window.livewireScriptConfig = {
             csrf: '{{ csrf_token() }}',
@@ -25,8 +26,7 @@
         >
             <div class="flex h-14 items-center gap-2 border-b border-gray-200 px-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-semibold text-gray-900">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-900 text-sm font-bold text-white">Z</span>
-                    <span>Zerrors</span>
+                    <img src="{{ asset('images/logo.png') }}" alt="Zerrors" class="h-6 w-auto">
                 </a>
             </div>
 
@@ -113,7 +113,7 @@
                 <button @click="sidebarOpen = true" class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
                     <x-lucide-menu class="h-5 w-5" />
                 </button>
-                <span class="font-semibold text-gray-900">Zerrors</span>
+                <img src="{{ asset('images/logo.png') }}" alt="Zerrors" class="h-6 w-auto">
             </header>
 
             <main class="flex-1 overflow-y-auto p-6">

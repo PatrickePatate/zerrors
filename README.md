@@ -1,58 +1,82 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="public/images/logo.png" alt="Zerrors" width="320">
 </p>
 
-## About Laravel
+<p align="center">
+  Self-hosted error tracking for your applications — Sentry-compatible ingestion, AI-assisted issue analysis, and multi-organization workspaces, built on Laravel.
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What is Zerrors?
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Zerrors collects exceptions and error events from your applications (via the Sentry SDK/DSN protocol) and gives your team a place to triage, discuss, and resolve them.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Organizations & projects** — group projects under organizations, invite teammates, and manage roles/members.
+- **Sentry-compatible ingestion** — point any existing Sentry SDK at a Zerrors project DSN (`/api/{projectId}/envelope` and `/api/{projectId}/store`) with no code changes.
+- **Issue tracking** — events are grouped into issues, with occurrence counts, releases, environments, and regression detection.
+- **AI-assisted analysis** — ask for an AI summary or a deeper investigation of an issue directly from the UI.
+- **Notifications** — per-project alert channels (email, Slack, Telegram) with configurable rules: new issue, regression, every event, or occurrence thresholds.
+- **GitHub integration** — create GitHub issues from a Zerrors issue, and forward events to Sentry as a second DSN if you want to keep both.
+- **Security** — two-factor authentication, audit logging, and a REST API for programmatic access.
 
-## Learning Laravel
+## Tech stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- [Laravel](https://laravel.com) 13 (PHP 8.4)
+- [Livewire](https://livewire.laravel.com) for interactive UI
+- [Laravel Horizon](https://laravel.com/docs/horizon) for queue processing of incoming events
+- [Laravel AI](https://laravel.com/docs/ai) for issue analysis
+- [Sentry SDK](https://docs.sentry.io/platforms/php/guides/laravel/) compatibility for ingestion
+- Tailwind CSS + Alpine.js on the frontend
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Getting started
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Requirements
 
-## Agentic Development
+- PHP 8.4+
+- Composer
+- Node.js & npm
+- A database supported by Laravel (MySQL/PostgreSQL/SQLite)
+- Redis (recommended, used by Horizon/queues)
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Installation
 
 ```bash
-composer require laravel/boost --dev
+composer install
+npm install
 
-php artisan boost:install
+cp .env.example .env
+php artisan key:generate
+
+php artisan migrate
+
+npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Running locally
 
-## Contributing
+```bash
+composer run dev
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+This starts the app server, queue worker, and Vite dev server together. Visit the app and register the first account to create your organization.
 
-## Code of Conduct
+### Sending errors to Zerrors
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Once you've created a project, use its DSN with any [Sentry SDK](https://docs.sentry.io/platforms/) exactly as you would with Sentry — Zerrors implements the same ingestion endpoints.
 
-## Security Vulnerabilities
+## Testing
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan test
+```
+
+## Code style
+
+This project uses [Laravel Pint](https://laravel.com/docs/pint):
+
+```bash
+vendor/bin/pint
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
