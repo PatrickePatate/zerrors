@@ -4,9 +4,7 @@
     <x-dropdown up>
         <x-slot:trigger>
             <button type="button" class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-gray-50">
-                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                    {{ Str::upper(Str::substr($user->name, 0, 1)) }}
-                </span>
+                <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="h-7 w-7 shrink-0 rounded-full object-cover">
                 <span class="min-w-0 flex-1">
                     <span class="block truncate text-sm font-medium text-gray-800">{{ $user->name }}</span>
                 </span>

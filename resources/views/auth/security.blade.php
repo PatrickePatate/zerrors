@@ -12,6 +12,41 @@
     @endif
 
     <x-card class="mb-6">
+        <h2 class="mb-1 text-sm font-medium text-gray-700">Profile picture</h2>
+        <p class="mb-3 text-sm text-gray-500">
+            Shown across the app wherever you're assigned or mentioned. Without one, we generate an avatar for you.
+        </p>
+
+        <div class="flex items-center gap-4">
+            <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}" class="h-14 w-14 rounded-full object-cover">
+
+            <div class="flex items-center gap-2">
+                <form method="POST" action="{{ route('security.avatar.update') }}" enctype="multipart/form-data" x-data="{ uploading: false }" @submit="uploading = true">
+                    @csrf
+                    <label class="cursor-pointer">
+                        <span class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50" :class="uploading && 'opacity-50 pointer-events-none'">
+                            <x-lucide-upload class="h-4 w-4" />
+                            <span x-text="uploading ? 'Uploading…' : 'Upload picture'"></span>
+                        </span>
+                        <input type="file" name="avatar" accept="image/*" class="hidden" @change="$event.target.form.requestSubmit()">
+                    </label>
+                    @error('avatar')
+                        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </form>
+
+                @if($user->avatar_path)
+                    <form method="POST" action="{{ route('security.avatar.destroy') }}">
+                        @csrf
+                        @method('DELETE')
+                        <x-button type="submit" variant="secondary">Remove</x-button>
+                    </form>
+                @endif
+            </div>
+        </div>
+    </x-card>
+
+    <x-card class="mb-6">
         <h2 class="mb-1 text-sm font-medium text-gray-700">Two-factor authentication</h2>
         <p class="mb-3 text-sm text-gray-500">Protect your account with a TOTP authenticator app (Google Authenticator, 1Password, Authy&hellip;).</p>
 
