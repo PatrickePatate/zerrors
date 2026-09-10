@@ -251,4 +251,21 @@ return [
         'composer.json',
         '.env',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Horizon Access
+    |--------------------------------------------------------------------------
+    |
+    | These values control who may view the Horizon dashboard, via the
+    | "viewHorizon" gate defined in HorizonServiceProvider. Each entry can be
+    | a full email address or a "@domain.tld" suffix; a user is granted
+    | access when their email matches or ends with any of these entries.
+    |
+    */
+
+    'allowed_emails' => array_filter(array_map(
+        'trim',
+        explode(',', (string) env('HORIZON_ALLOWED_EMAILS', '@example.com,@example.org,you@example.com'))
+    )),
 ];
