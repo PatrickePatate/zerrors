@@ -40,6 +40,8 @@ class ProcessFaultEvent implements ShouldQueue
             return;
         }
 
+        ForwardFaultEvent::dispatch($this->projectId, $this->eventId, $this->payload);
+
         $payload = $this->payload;
         $exception = $payload['exception']['values'][0] ?? null;
         $fingerprint = EventFingerprinter::for($payload);
