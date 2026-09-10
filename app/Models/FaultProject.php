@@ -18,14 +18,12 @@ class FaultProject extends Model
     protected $fillable = [
         'organization_id', 'name', 'slug', 'platform', 'public_key', 'secret_key',
         'retention_days', 'github_repo', 'github_token', 'production_branch', 'github_webhook_secret',
-        'slack_webhook_url', 'telegram_bot_token', 'telegram_chat_id', 'notify_email',
     ];
 
     protected $casts = [
         'platform' => FaultPlatform::class,
         'github_token' => 'encrypted',
         'github_webhook_secret' => 'encrypted',
-        'telegram_bot_token' => 'encrypted',
     ];
 
     protected static function booted(): void
@@ -55,6 +53,11 @@ class FaultProject extends Model
     public function releases(): HasMany
     {
         return $this->hasMany(Release::class);
+    }
+
+    public function notificationChannels(): HasMany
+    {
+        return $this->hasMany(NotificationChannel::class);
     }
 
     /**
@@ -87,20 +90,5 @@ class FaultProject extends Model
         $host = $host ?? request()->getSchemeAndHttpHost();
 
         return "{$host}/api/webhooks/github/{$this->public_key}";
-    }
-
-    public function hasSlackConfigured(): bool
-    {
-        return ! empty($this->slack_webhook_url);
-    }
-
-    public function hasTelegramConfigured(): bool
-    {
-        return ! empty($this->telegram_bot_token) && ! empty($this->telegram_chat_id);
-    }
-
-    public function hasEmailAlertConfigured(): bool
-    {
-        return ! empty($this->notify_email);
     }
 }

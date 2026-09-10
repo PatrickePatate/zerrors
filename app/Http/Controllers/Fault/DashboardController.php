@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Fault;
 
 use App\Enums\FaultPlatform;
+use App\Enums\NotificationChannelType;
+use App\Enums\NotificationRuleTrigger;
 use App\Http\Controllers\Controller;
 use App\Models\FaultProject;
 use App\Models\Organization;
@@ -32,6 +34,18 @@ class DashboardController extends Controller
         ]);
 
         $project = $organization->projects()->create($data);
+
+        $channel = $project->notificationChannels()->create([
+            'type' => NotificationChannelType::Email,
+            'name' => 'Email',
+            'config' => ['email' => $request->user()->email],
+            'enabled' => true,
+        ]);
+
+        $channel->rules()->create([
+            'trigger' => NotificationRuleTrigger::OccurrenceThreshold,
+            'thresholds' => [1, 10, 100, 1000],
+        ]);
 
         return redirect()->route('organizations.projects.show', [$organization, $project]);
     }
@@ -64,27 +78,6 @@ class DashboardController extends Controller
         $project->update($data);
 
         return back()->with('status', 'Project settings updated.');
-    }
-
-    public function updateNotifications(Request $request, Organization $organization, FaultProject $project)
-    {
-        abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
-
-        $data = $request->validate([
-            'slack_webhook_url' => ['nullable', 'url', 'max:2048'],
-            'telegram_bot_token' => ['nullable', 'string', 'max:255'],
-            'telegram_chat_id' => ['nullable', 'string', 'max:255'],
-            'notify_email' => ['nullable', 'email', 'max:255'],
-        ]);
-
-        if (empty($data['telegram_bot_token'])) {
-            unset($data['telegram_bot_token']);
-        }
-
-        $project->update($data);
-
-        return back()->with('status', 'Notification settings updated.');
     }
 
     public function show(Request $request, Organization $organization, FaultProject $project): View

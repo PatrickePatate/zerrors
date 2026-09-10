@@ -77,18 +77,15 @@
                 </x-modal>
 
                 @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
-                    @php
-                        $notificationErrors = $errors->has('slack_webhook_url') || $errors->has('telegram_bot_token') || $errors->has('telegram_chat_id') || $errors->has('notify_email');
-                    @endphp
                     <x-modal
-                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('github_token') || $errors->has('production_branch') || $errors->has('github_webhook_secret') || $notificationErrors"
+                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('github_token') || $errors->has('production_branch') || $errors->has('github_webhook_secret')"
                         max-width="lg"
                     >
                         <x-slot:trigger>
                             <x-button type="button" variant="secondary">Edit project</x-button>
                         </x-slot:trigger>
 
-                        <div x-data="{ tab: @js($notificationErrors ? 'notifications' : 'details') }">
+                        <div x-data="{ tab: 'details' }">
                             <div class="mb-4 flex gap-1 border-b border-gray-200">
                                 <button type="button" @click="tab = 'details'"
                                         :class="tab === 'details' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -162,31 +159,11 @@
                             </div>
 
                             <div x-show="tab === 'notifications'" x-cloak>
-                                <form method="POST" action="{{ route('organizations.projects.notifications.update', [$organization, $project]) }}" class="space-y-4">
-                                    @csrf
-                                    @method('PATCH')
-                                    <div>
-                                        <x-form.text-input label="Slack webhook URL" name="slack_webhook_url" value="{{ $project->slack_webhook_url }}"
-                                                 placeholder="https://hooks.slack.com/services/…" :error="$errors->first('slack_webhook_url')" />
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <x-form.text-input label="Telegram bot token" name="telegram_bot_token" type="password"
-                                                 placeholder="{{ $project->telegram_bot_token ? '••••••••' : '123456:ABC-…' }}" :error="$errors->first('telegram_bot_token')" />
-                                        <x-form.text-input label="Telegram chat ID" name="telegram_chat_id" value="{{ $project->telegram_chat_id }}"
-                                                 placeholder="-100123456789" :error="$errors->first('telegram_chat_id')" />
-                                    </div>
-                                    <p class="-mt-2 text-xs text-gray-400">Message @BotFather to create a bot, then add it to a chat/channel to find the chat ID.</p>
-                                    <div>
-                                        <x-form.text-input label="Alert email" type="email" name="notify_email" value="{{ $project->notify_email }}"
-                                                 placeholder="alerts@example.com" :error="$errors->first('notify_email')" />
-                                        <p class="mt-1 text-xs text-gray-400">Sent in addition to organization members, if email alerts are enabled in organization settings.</p>
-                                    </div>
+                                <livewire:notification-channel-manager :organization="$organization" :project="$project" :key="'notification-channels-'.$project->id" />
 
-                                    <div class="flex justify-end gap-2">
-                                        <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
-                                        <x-button type="submit">Save</x-button>
-                                    </div>
-                                </form>
+                                <div class="mt-4 flex justify-end">
+                                    <x-button type="button" variant="secondary" @click="open = false">Close</x-button>
+                                </div>
                             </div>
                         </div>
                     </x-modal>

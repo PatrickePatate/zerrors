@@ -3,6 +3,8 @@
 namespace Tests\Feature\Fault;
 
 use App\Enums\FaultPlatform;
+use App\Enums\NotificationChannelType;
+use App\Enums\NotificationRuleTrigger;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Models\User;
@@ -24,6 +26,28 @@ class ProjectPlatformTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('fault_projects', ['name' => 'API', 'platform' => 'laravel']);
+    }
+
+    public function test_a_new_project_gets_a_default_email_channel_with_occurrence_thresholds(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create(['email' => 'owner@example.com']);
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+
+        $this->actingAs($owner)
+            ->post(route('organizations.projects.store', $organization), ['name' => 'API', 'platform' => 'laravel'])
+            ->assertRedirect();
+
+        $project = FaultProject::where('name', 'API')->sole();
+        $channel = $project->notificationChannels()->with('rules')->sole();
+
+        $this->assertSame(NotificationChannelType::Email, $channel->type);
+        $this->assertSame('owner@example.com', $channel->config['email']);
+
+        $rule = $channel->rules->sole();
+        $this->assertSame(NotificationRuleTrigger::OccurrenceThreshold, $rule->trigger);
+        $this->assertSame([1, 10, 100, 1000], $rule->thresholds);
+        $this->assertTrue($rule->enabled);
     }
 
     public function test_owner_can_update_the_project_platform_and_github_settings(): void

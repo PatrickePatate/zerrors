@@ -2,75 +2,100 @@
 
 namespace Tests\Feature\Fault;
 
+use App\Enums\NotificationRuleTrigger;
+use App\Livewire\NotificationChannelManager;
 use App\Models\FaultProject;
+use App\Models\NotificationChannel;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ProjectNotificationSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_owner_can_configure_slack_telegram_and_email_alerts(): void
+    public function test_owner_can_add_a_slack_channel(): void
     {
         $organization = Organization::factory()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
 
-        $this->actingAs($owner)
-            ->patch(route('organizations.projects.notifications.update', [$organization, $project]), [
-                'slack_webhook_url' => 'https://hooks.slack.com/services/x',
-                'telegram_bot_token' => '123456:ABC',
-                'telegram_chat_id' => '-100123456',
-                'notify_email' => 'alerts@example.com',
-            ])
-            ->assertRedirect();
+        Livewire::actingAs($owner)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->set('newChannelType', 'slack')
+            ->set('newWebhookUrl', 'https://hooks.slack.com/services/x')
+            ->call('addChannel')
+            ->assertHasNoErrors();
 
-        $project->refresh();
-        $this->assertSame('https://hooks.slack.com/services/x', $project->slack_webhook_url);
-        $this->assertSame('123456:ABC', $project->telegram_bot_token);
-        $this->assertSame('-100123456', $project->telegram_chat_id);
-        $this->assertSame('alerts@example.com', $project->notify_email);
-        $this->assertTrue($project->hasSlackConfigured());
-        $this->assertTrue($project->hasTelegramConfigured());
-        $this->assertTrue($project->hasEmailAlertConfigured());
+        $channel = $project->notificationChannels()->sole();
+        $this->assertSame('https://hooks.slack.com/services/x', $channel->config['webhook_url']);
     }
 
-    public function test_blank_telegram_token_keeps_the_existing_one(): void
+    public function test_adding_a_channel_validates_its_config(): void
     {
         $organization = Organization::factory()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'telegram_bot_token' => 'existing-token',
-            'telegram_chat_id' => '111',
-        ]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
 
-        $this->actingAs($owner)
-            ->patch(route('organizations.projects.notifications.update', [$organization, $project]), [
-                'telegram_chat_id' => '222',
-            ])
-            ->assertRedirect();
+        Livewire::actingAs($owner)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->set('newChannelType', 'slack')
+            ->set('newWebhookUrl', 'not-a-url')
+            ->call('addChannel')
+            ->assertHasErrors(['newWebhookUrl']);
 
-        $project->refresh();
-        $this->assertSame('existing-token', $project->telegram_bot_token);
-        $this->assertSame('222', $project->telegram_chat_id);
+        $this->assertSame(0, $project->notificationChannels()->count());
     }
 
-    public function test_member_cannot_configure_notifications(): void
+    public function test_owner_can_toggle_a_rule_and_set_occurrence_thresholds(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')->slack('https://hooks.slack.com/services/x')->create();
+
+        Livewire::actingAs($owner)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->call('toggleRule', $channel->id, NotificationRuleTrigger::EveryEvent->value)
+            ->set("thresholdInputs.{$channel->id}", '1, 10, 10, 100')
+            ->call('updateThresholds', $channel->id);
+
+        $channel->refresh();
+        $this->assertTrue($channel->rules->firstWhere('trigger', NotificationRuleTrigger::EveryEvent)->enabled);
+        $thresholdRule = $channel->rules->firstWhere('trigger', NotificationRuleTrigger::OccurrenceThreshold);
+        $this->assertSame([1, 10, 100], $thresholdRule->thresholds);
+        $this->assertTrue($thresholdRule->enabled);
+    }
+
+    public function test_owner_can_delete_a_channel(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')->slack('https://hooks.slack.com/services/x')->create();
+
+        Livewire::actingAs($owner)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->call('deleteChannel', $channel->id);
+
+        $this->assertSame(0, $project->notificationChannels()->count());
+    }
+
+    public function test_member_cannot_manage_notification_channels(): void
     {
         $organization = Organization::factory()->create();
         $member = User::factory()->create();
         $organization->users()->attach($member->id, ['role' => 'member']);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
 
-        $this->actingAs($member)
-            ->patch(route('organizations.projects.notifications.update', [$organization, $project]), [
-                'slack_webhook_url' => 'https://hooks.slack.com/services/x',
-            ])
-            ->assertForbidden();
+        Livewire::actingAs($member)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->assertStatus(403);
     }
 }
