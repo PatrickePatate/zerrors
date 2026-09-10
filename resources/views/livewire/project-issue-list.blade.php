@@ -47,7 +47,8 @@
                 @forelse($issues as $issue)
                     <tr
                         x-data="{ menuOpen: false, x: 0, y: 0 }"
-                        @contextmenu.prevent="menuOpen = true; x = $event.clientX; y = $event.clientY"
+                        @contextmenu.prevent="$dispatch('issue-context-menu-open', {{ $issue->id }}); x = $event.clientX; y = $event.clientY; menuOpen = true"
+                        @issue-context-menu-open.window="if ($event.detail !== {{ $issue->id }}) menuOpen = false"
                         @click.outside="menuOpen = false"
                         @keydown.escape.window="menuOpen = false"
                         :class="menuOpen && 'bg-gray-50'"
