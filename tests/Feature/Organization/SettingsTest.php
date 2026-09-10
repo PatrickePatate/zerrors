@@ -38,8 +38,10 @@ class SettingsTest extends TestCase
     public function test_owner_can_delete_the_organization_by_typing_its_name(): void
     {
         $organization = Organization::factory()->create(['name' => 'Doomed Inc']);
+        $otherOrganization = Organization::factory()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $otherOrganization->users()->attach($owner->id, ['role' => 'member']);
 
         $response = $this->actingAs($owner)->delete(route('organizations.settings.destroy', $organization), [
             'confirm_name' => 'Doomed Inc',
@@ -52,11 +54,27 @@ class SettingsTest extends TestCase
     public function test_deleting_the_organization_requires_typing_the_exact_name(): void
     {
         $organization = Organization::factory()->create(['name' => 'Doomed Inc']);
+        $otherOrganization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $otherOrganization->users()->attach($owner->id, ['role' => 'member']);
+
+        $response = $this->actingAs($owner)->delete(route('organizations.settings.destroy', $organization), [
+            'confirm_name' => 'wrong',
+        ]);
+
+        $response->assertSessionHasErrors('confirm_name');
+        $this->assertDatabaseHas('organizations', ['id' => $organization->id]);
+    }
+
+    public function test_owner_cannot_delete_their_only_organization(): void
+    {
+        $organization = Organization::factory()->create(['name' => 'Doomed Inc']);
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
 
         $response = $this->actingAs($owner)->delete(route('organizations.settings.destroy', $organization), [
-            'confirm_name' => 'wrong',
+            'confirm_name' => 'Doomed Inc',
         ]);
 
         $response->assertSessionHasErrors('confirm_name');

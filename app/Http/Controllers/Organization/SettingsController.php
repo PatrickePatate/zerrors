@@ -72,7 +72,12 @@ class SettingsController extends Controller
      */
     public function destroy(Request $request, Organization $organization)
     {
-        abort_unless($organization->roleFor($request->user()) === 'owner', 403);
+        $user = $request->user();
+        abort_unless($organization->roleFor($user) === 'owner', 403);
+
+        if ($user->organizations()->count() <= 1) {
+            return back()->withErrors(['confirm_name' => 'You must belong to another organization before deleting your last one.']);
+        }
 
         $request->validate([
             'confirm_name' => ['required', 'string'],
