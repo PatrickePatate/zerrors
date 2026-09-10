@@ -31,41 +31,101 @@
                 </div>
             </x-card>
 
-            @php($latestEvent = $events->first())
-            @if($latestEvent && $latestEvent->exception)
+            @if($currentEvent)
                 <x-card>
-                    <h2 class="mb-3 text-sm font-medium text-gray-700">Stack trace <span class="font-normal text-gray-400">(latest event)</span></h2>
-                    <x-stacktrace :exception="$latestEvent->exception" />
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-sm font-medium text-gray-700">
+                                Event {{ $eventNavigation['position'] }} of {{ $eventNavigation['total'] }}
+                            </h2>
+                            <p class="mt-0.5 text-xs text-gray-400">
+                                {{ $currentEvent->occurred_at }} &middot; <code class="text-gray-500">{{ $currentEvent->event_id }}</code>
+                                @if($currentEvent->environment) &middot; {{ $currentEvent->environment }} @endif
+                                @if($currentEvent->release) &middot; {{ $currentEvent->release }} @endif
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            @php
+                                $navLinks = [
+                                    ['label' => 'Oldest', 'icon' => 'chevrons-left', 'target' => $eventNavigation['oldest']],
+                                    ['label' => 'Older', 'icon' => 'chevron-left', 'target' => $eventNavigation['previous']],
+                                    ['label' => 'Newer', 'icon' => 'chevron-right', 'target' => $eventNavigation['next']],
+                                    ['label' => 'Newest', 'icon' => 'chevrons-right', 'target' => $eventNavigation['newest']],
+                                ];
+                            @endphp
+                            @foreach($navLinks as $nav)
+                                @php
+                                    $isCurrent = $nav['target'] && $nav['target']->is($currentEvent);
+                                    $disabled = ! $nav['target'] || $isCurrent;
+                                @endphp
+                                @if($disabled)
+                                    <span title="{{ $nav['label'] }}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-300">
+                                        <x-dynamic-component :component="'lucide-'.$nav['icon']" class="h-4 w-4" />
+                                    </span>
+                                @else
+                                    <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $nav['target']->id]) }}"
+                                       title="{{ $nav['label'] }}"
+                                       class="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-900">
+                                        <x-dynamic-component :component="'lucide-'.$nav['icon']" class="h-4 w-4" />
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 </x-card>
             @endif
 
-            @if($latestEvent)
+            @if($currentEvent && $currentEvent->exception)
                 <x-card>
-                    <h2 class="mb-3 text-sm font-medium text-gray-700">User & context <span class="font-normal text-gray-400">(latest event)</span></h2>
-                    @include('fault.issues.partials.context', ['event' => $latestEvent])
+                    <h2 class="mb-3 text-sm font-medium text-gray-700">Stack trace</h2>
+                    <x-stacktrace :exception="$currentEvent->exception" />
+                </x-card>
+            @endif
+
+            @if($currentEvent)
+                <x-card>
+                    <h2 class="mb-3 text-sm font-medium text-gray-700">User & context</h2>
+                    @include('fault.issues.partials.context', ['event' => $currentEvent])
                 </x-card>
             @endif
 
             <div>
-                <h2 class="mb-3 text-sm font-medium text-gray-700">Recent events</h2>
-                <div class="space-y-3">
-                    @foreach($events as $event)
-                        <x-card>
-                            <p class="text-xs text-gray-400">
-                                {{ $event->occurred_at }} &middot; <code class="text-gray-500">{{ $event->event_id }}</code>
-                                @if($event->environment) &middot; {{ $event->environment }} @endif
-                                @if($event->release) &middot; {{ $event->release }} @endif
-                            </p>
-                            <p class="mt-1 text-sm text-gray-800">{{ $event->message }}</p>
-                            @if($event->tags)
-                                <div class="mt-2 flex flex-wrap gap-1.5">
-                                    @foreach($event->tags as $key => $value)
-                                        <x-badge color="blue">{{ $key }}: {{ $value }}</x-badge>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </x-card>
-                    @endforeach
+                <h2 class="mb-3 text-sm font-medium text-gray-700">All events</h2>
+                <div class="overflow-hidden overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left font-medium text-gray-500">Occurred</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-500">Message</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-500">Environment</th>
+                                <th class="px-4 py-2 text-left font-medium text-gray-500">Release</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 bg-white">
+                            @foreach($events as $event)
+                                @php($isCurrent = $currentEvent && $event->is($currentEvent))
+                                <tr @class(['bg-indigo-50/60' => $isCurrent, 'hover:bg-gray-50' => ! $isCurrent])>
+                                    <td class="px-4 py-2 whitespace-nowrap">
+                                        <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block text-gray-700 hover:text-gray-900">
+                                            @if($isCurrent)
+                                                <span class="font-medium text-indigo-700">{{ $event->occurred_at }}</span>
+                                            @else
+                                                {{ $event->occurred_at }}
+                                            @endif
+                                        </a>
+                                    </td>
+                                    <td class="max-w-xs px-4 py-2">
+                                        <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block truncate text-gray-700 hover:text-gray-900">
+                                            {{ $event->message ?: '—' }}
+                                        </a>
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-gray-500">{{ $event->environment ?: '—' }}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap text-gray-500">{{ $event->release ?: '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="mt-4">{{ $events->links() }}</div>
