@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Fault;
 
 use App\Http\Controllers\Controller;
+use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
@@ -14,20 +15,59 @@ use RuntimeException;
 
 class IssueController extends Controller
 {
-    public function show(Organization $organization, FaultProject $project, FaultIssue $issue): View
+    public function show(Organization $organization, FaultProject $project, FaultIssue $issue, ?string $event = null): View
     {
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
-        $events = $issue->events()->latest('occurred_at')->paginate(20);
+        $currentEvent = $this->resolveEvent($issue, $event);
 
         return view('fault.issues.show', [
             'organization' => $organization,
             'project' => $project,
             'issue' => $issue,
-            'events' => $events,
+            'currentEvent' => $currentEvent,
+            'eventNavigation' => $currentEvent ? $this->eventNavigation($issue, $currentEvent) : null,
+            'events' => $issue->events()->latest('occurred_at')->paginate(20),
             'members' => $organization->users()->orderBy('name')->get(),
         ]);
+    }
+
+    /**
+     * Resolve the event to display: the `latest`/`oldest` keyword, a specific event id, or (by
+     * default) the most recently seen event for the issue.
+     */
+    private function resolveEvent(FaultIssue $issue, ?string $event): ?FaultEvent
+    {
+        return match ($event) {
+            null, 'latest' => $issue->events()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
+            'oldest' => $issue->events()->orderBy('occurred_at')->orderBy('id')->first(),
+            default => $issue->events()->where('id', $event)->firstOrFail(),
+        };
+    }
+
+    /**
+     * Build the oldest/newest/previous/next events around the current one, plus its
+     * 1-based position among all of the issue's events, for the event navigation UI.
+     *
+     * @return array{oldest: ?FaultEvent, newest: ?FaultEvent, previous: ?FaultEvent, next: ?FaultEvent, position: int, total: int}
+     */
+    private function eventNavigation(FaultIssue $issue, FaultEvent $current): array
+    {
+        $before = fn () => $issue->events()->where(fn ($q) => $q->where('occurred_at', '<', $current->occurred_at)
+            ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '<', $current->id)));
+
+        $after = fn () => $issue->events()->where(fn ($q) => $q->where('occurred_at', '>', $current->occurred_at)
+            ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '>', $current->id)));
+
+        return [
+            'oldest' => $issue->events()->orderBy('occurred_at')->orderBy('id')->first(),
+            'newest' => $issue->events()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
+            'previous' => $before()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
+            'next' => $after()->orderBy('occurred_at')->orderBy('id')->first(),
+            'position' => $before()->count() + 1,
+            'total' => $issue->events()->count(),
+        ];
     }
 
     public function update(Request $request, Organization $organization, FaultProject $project, FaultIssue $issue)
