@@ -117,7 +117,7 @@ class ProcessFaultEvent implements ShouldQueue
             $notifier->issueRegressed($issue);
         }
 
-        $notifier->issueOccurrence($issue);
+        $notifier->issueOccurrence($issue, isFirstOccurrence: $wasNew);
     }
 
     protected function parseTimestamp(mixed $timestamp): Carbon
