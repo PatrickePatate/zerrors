@@ -54,6 +54,13 @@
                             <div class="flex items-center justify-between px-6 py-2 text-sm">
                                 <div>
                                     <span class="font-mono font-medium text-gray-900">{{ $release->version }}</span>
+                                    @if($release->hasCommit())
+                                        @if($release->commit_url)
+                                            <a href="{{ $release->commit_url }}" target="_blank" rel="noopener noreferrer" class="ml-2 font-mono text-xs text-gray-400 hover:text-gray-600 hover:underline">{{ Str::limit($release->commit_sha, 7, '') }}</a>
+                                        @else
+                                            <span class="ml-2 font-mono text-xs text-gray-400">{{ Str::limit($release->commit_sha, 7, '') }}</span>
+                                        @endif
+                                    @endif
                                     <span class="ml-2 text-gray-400">{{ $release->deployed_at->diffForHumans() }}</span>
                                     @if($release->notes)
                                         <span class="ml-2 text-gray-500">{{ $release->notes }}</span>
