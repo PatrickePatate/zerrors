@@ -16,8 +16,9 @@
             <span class="text-sm text-gray-500">Assigned to</span>
             <div class="w-40">
                 <x-form.select id="assignedToUserId" wire:model.live="assignedToUserId"
-                                :options="['' => 'Unassigned', ...$members->pluck('name', 'id')->all()]"
-                                :selected="$assignedToUserId" />
+                                :options="['' => 'Unassigned'] + $members->pluck('name', 'id')->all()"
+                                :selected="$assignedToUserId"
+                                :error="$errors->first('assignedToUserId')" />
             </div>
         </div>
     </div>
@@ -50,6 +51,34 @@
             </button>
         @endif
     </div>
+
+    @if($event)
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500">
+            @if($eventUser = $event->contextUser())
+                <span class="inline-flex items-center gap-1.5">
+                    <x-lucide-user class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    {{ $eventUser['email'] ?? $eventUser['username'] ?? ('User #'.$eventUser['id']) }}
+                </span>
+            @endif
+
+            @if($browser = $event->browserLabel())
+                <span class="inline-flex items-center gap-1.5">
+                    <x-lucide-monitor class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    {{ $browser }}
+                    @if($event->isLikelyBot())
+                        <x-badge color="amber">bot</x-badge>
+                    @endif
+                </span>
+            @endif
+
+            @if($contextUrl = $event->contextUrl())
+                <span class="inline-flex min-w-0 items-center gap-1.5" title="{{ $contextUrl }}">
+                    <x-lucide-link class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    <span class="max-w-sm truncate">{{ $contextUrl }}</span>
+                </span>
+            @endif
+        </div>
+    @endif
 
     @if($commitError)
         <p class="mt-2 text-sm text-red-600">{{ $commitError }}</p>

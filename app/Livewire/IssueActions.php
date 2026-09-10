@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
@@ -18,17 +19,20 @@ class IssueActions extends Component
 
     public FaultIssue $issue;
 
+    public ?FaultEvent $event = null;
+
     public ?int $assignedToUserId = null;
 
     public ?string $githubError = null;
 
     public ?string $commitError = null;
 
-    public function mount(Organization $organization, FaultProject $project, FaultIssue $issue): void
+    public function mount(Organization $organization, FaultProject $project, FaultIssue $issue, ?FaultEvent $event = null): void
     {
         $this->organization = $organization;
         $this->project = $project;
         $this->issue = $issue;
+        $this->event = $event;
         $this->assignedToUserId = $issue->assigned_to_user_id;
     }
 
@@ -41,10 +45,13 @@ class IssueActions extends Component
 
     public function updatedAssignedToUserId(?string $value): void
     {
-        $userId = $value !== '' ? (int) $value : null;
+        $userId = $value !== null && $value !== '' ? (int) $value : null;
 
-        if ($userId !== null) {
-            abort_unless($this->organization->users()->where('user_id', $userId)->exists(), 422);
+        if ($userId !== null && ! $this->organization->users()->where('user_id', $userId)->exists()) {
+            $this->addError('assignedToUserId', 'That user is not a member of this organization.');
+            $this->assignedToUserId = $this->issue->assigned_to_user_id;
+
+            return;
         }
 
         $this->issue->update(['assigned_to_user_id' => $userId]);
