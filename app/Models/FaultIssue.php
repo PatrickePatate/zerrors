@@ -16,7 +16,8 @@ class FaultIssue extends Model
     protected $fillable = [
         'fault_project_id', 'fingerprint', 'type', 'title', 'culprit',
         'level', 'status', 'times_seen', 'first_seen_at', 'last_seen_at',
-        'ai_analysis', 'ai_analyzed_at', 'assigned_to_user_id', 'regressed_at',
+        'ai_analysis', 'ai_analyzed_at', 'ai_deep_analysis', 'ai_deep_analyzed_at',
+        'assigned_to_user_id', 'regressed_at',
         'first_seen_release', 'github_issue_url', 'github_issue_number',
     ];
 
@@ -24,6 +25,7 @@ class FaultIssue extends Model
         'first_seen_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'ai_analyzed_at' => 'datetime',
+        'ai_deep_analyzed_at' => 'datetime',
         'regressed_at' => 'datetime',
     ];
 

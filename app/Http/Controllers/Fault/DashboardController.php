@@ -107,6 +107,37 @@ class DashboardController extends Controller
         return back()->with('status', 'Forwarding settings updated.');
     }
 
+    /**
+     * Move a project to another organization the user owns.
+     */
+    public function transfer(Request $request, Organization $organization, FaultProject $project)
+    {
+        abort_unless($project->organization_id === $organization->id, 404);
+        abort_unless($organization->roleFor($request->user()) === 'owner', 403);
+
+        $data = $request->validate([
+            'organization_id' => ['required', 'integer', Rule::exists('organizations', 'id')],
+        ]);
+
+        abort_if((int) $data['organization_id'] === $organization->id, 422, 'Choose a different organization.');
+
+        $destination = Organization::findOrFail($data['organization_id']);
+
+        abort_unless($destination->roleFor($request->user()) === 'owner', 403);
+
+        $project->update(['organization_id' => $destination->id]);
+
+        app(AuditLogger::class)->log($organization, $request->user(), 'project.transferred', $project->name, [
+            'destination_organization_id' => $destination->id,
+        ]);
+        app(AuditLogger::class)->log($destination, $request->user(), 'project.received', $project->name, [
+            'source_organization_id' => $organization->id,
+        ]);
+
+        return redirect()->route('organizations.projects.show', [$destination, $project])
+            ->with('status', "Project moved to {$destination->name}.");
+    }
+
     public function show(Request $request, Organization $organization, FaultProject $project): View
     {
         abort_unless($project->organization_id === $organization->id, 404);

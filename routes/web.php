@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project:slug}/github-webhook-secret', [DashboardController::class, 'generateGithubWebhookSecret'])->name('organizations.projects.githubWebhookSecret.generate');
         Route::patch('/projects/{project:slug}/settings', [DashboardController::class, 'updateSettings'])->name('organizations.projects.settings.update');
         Route::patch('/projects/{project:slug}/forwarding', [DashboardController::class, 'updateForwarding'])->name('organizations.projects.forwarding.update');
+        Route::post('/projects/{project:slug}/transfer', [DashboardController::class, 'transfer'])->name('organizations.projects.transfer');
         Route::post('/projects/{project:slug}/releases', [ReleaseController::class, 'store'])->name('organizations.projects.releases.store');
         Route::delete('/projects/{project:slug}/releases/{release}', [ReleaseController::class, 'destroy'])->name('organizations.projects.releases.destroy');
 
