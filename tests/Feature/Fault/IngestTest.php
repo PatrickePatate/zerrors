@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Fault;
 
+use App\Jobs\Fault\ForwardFaultEvent;
 use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Tests\TestCase;
 
 class IngestTest extends TestCase
@@ -14,6 +16,8 @@ class IngestTest extends TestCase
 
     public function test_envelope_endpoint_stores_an_event_and_groups_it_into_an_issue(): void
     {
+        Bus::fake([ForwardFaultEvent::class]);
+
         $project = FaultProject::factory()->create();
 
         $eventId = 'a'.str_repeat('0', 31);
@@ -56,6 +60,11 @@ class IngestTest extends TestCase
         $issue = FaultIssue::first();
         $this->assertSame('RuntimeException', $issue->title);
         $this->assertSame(1, $issue->times_seen);
+
+        Bus::assertDispatched(
+            ForwardFaultEvent::class,
+            fn ($job) => $job->projectId === $project->id && str_replace('-', '', $job->eventId) === $eventId
+        );
     }
 
     public function test_envelope_endpoint_rejects_an_invalid_dsn_key(): void

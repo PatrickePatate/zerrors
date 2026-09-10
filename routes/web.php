@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project:slug}/rotate-key', [DashboardController::class, 'rotateKey'])->name('organizations.projects.rotateKey');
         Route::post('/projects/{project:slug}/github-webhook-secret', [DashboardController::class, 'generateGithubWebhookSecret'])->name('organizations.projects.githubWebhookSecret.generate');
         Route::patch('/projects/{project:slug}/settings', [DashboardController::class, 'updateSettings'])->name('organizations.projects.settings.update');
+        Route::patch('/projects/{project:slug}/forwarding', [DashboardController::class, 'updateForwarding'])->name('organizations.projects.forwarding.update');
         Route::post('/projects/{project:slug}/releases', [ReleaseController::class, 'store'])->name('organizations.projects.releases.store');
         Route::delete('/projects/{project:slug}/releases/{release}', [ReleaseController::class, 'destroy'])->name('organizations.projects.releases.destroy');
 
@@ -70,6 +71,7 @@ Route::middleware('auth')->group(function () {
         Route::patch('/projects/{project:slug}/issues/{issue}', [IssueController::class, 'update'])->name('organizations.issues.update');
         Route::patch('/projects/{project:slug}/issues/{issue}/assign', [IssueController::class, 'assign'])->name('organizations.issues.assign');
         Route::post('/projects/{project:slug}/issues/{issue}/analyze', [IssueController::class, 'analyze'])->name('organizations.issues.analyze');
+        Route::post('/projects/{project:slug}/issues/{issue}/deepen', [IssueController::class, 'deepen'])->name('organizations.issues.deepen');
         Route::post('/projects/{project:slug}/issues/{issue}/github', [IssueController::class, 'createGithubIssue'])->name('organizations.issues.github');
 
         Route::get('/members', [MemberController::class, 'index'])->name('organizations.members.index');

@@ -78,7 +78,7 @@
 
                 @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
                     <x-modal
-                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('github_token') || $errors->has('production_branch') || $errors->has('github_webhook_secret')"
+                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('github_token') || $errors->has('production_branch') || $errors->has('github_webhook_secret') || $errors->has('forward_dsn')"
                         max-width="lg"
                     >
                         <x-slot:trigger>
@@ -93,6 +93,9 @@
                                 <button type="button" @click="tab = 'notifications'"
                                         :class="tab === 'notifications' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
                                         class="border-b-2 px-3 pb-2 text-sm font-medium">Notifications</button>
+                                <button type="button" @click="tab = 'forwarding'"
+                                        :class="tab === 'forwarding' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Forwarding</button>
                             </div>
 
                             <div x-show="tab === 'details'">
@@ -164,6 +167,33 @@
                                 <div class="mt-4 flex justify-end">
                                     <x-button type="button" variant="secondary" @click="open = false">Close</x-button>
                                 </div>
+                            </div>
+
+                            <div x-show="tab === 'forwarding'" x-cloak>
+                                <form method="POST" action="{{ route('organizations.projects.forwarding.update', [$organization, $project]) }}" class="space-y-4">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <p class="text-xs text-gray-500">
+                                        Every event ingested for this project is also re-sent to another Sentry-compatible
+                                        DSN, so you can run zerrors and Sentry side by side without changing the SDK config.
+                                    </p>
+
+                                    <div>
+                                        <x-form.text-input label="Target DSN" name="forward_dsn" value="{{ old('forward_dsn', $project->forward_dsn) }}"
+                                                            placeholder="https://<key>@o0.ingest.sentry.io/0" :error="$errors->first('forward_dsn')" />
+                                    </div>
+
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="checkbox" name="forward_enabled" value="1" @checked($project->forward_enabled) class="rounded border-gray-300">
+                                        Forward events to this DSN
+                                    </label>
+
+                                    <div class="flex justify-end gap-2">
+                                        <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
+                                        <x-button type="submit">Save</x-button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </x-modal>

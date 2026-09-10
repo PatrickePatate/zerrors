@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use InvalidArgumentException;
+use Sentry\Dsn;
 
 class DashboardController extends Controller
 {
@@ -78,6 +80,31 @@ class DashboardController extends Controller
         $project->update($data);
 
         return back()->with('status', 'Project settings updated.');
+    }
+
+    public function updateForwarding(Request $request, Organization $organization, FaultProject $project)
+    {
+        abort_unless($project->organization_id === $organization->id, 404);
+        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+
+        $data = $request->validate([
+            'forward_enabled' => ['sometimes', 'boolean'],
+            'forward_dsn' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $data['forward_enabled'] = $request->boolean('forward_enabled');
+
+        if (array_key_exists('forward_dsn', $data) && $data['forward_dsn'] !== null) {
+            try {
+                Dsn::createFromString($data['forward_dsn']);
+            } catch (InvalidArgumentException) {
+                return back()->withErrors(['forward_dsn' => 'That does not look like a valid Sentry DSN.']);
+            }
+        }
+
+        $project->update($data);
+
+        return back()->with('status', 'Forwarding settings updated.');
     }
 
     public function show(Request $request, Organization $organization, FaultProject $project): View

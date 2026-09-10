@@ -18,12 +18,15 @@ class FaultProject extends Model
     protected $fillable = [
         'organization_id', 'name', 'slug', 'platform', 'public_key', 'secret_key',
         'retention_days', 'github_repo', 'github_token', 'production_branch', 'github_webhook_secret',
+        'forward_enabled', 'forward_dsn',
     ];
 
     protected $casts = [
         'platform' => FaultPlatform::class,
         'github_token' => 'encrypted',
         'github_webhook_secret' => 'encrypted',
+        'forward_enabled' => 'boolean',
+        'forward_dsn' => 'encrypted',
     ];
 
     protected static function booted(): void
@@ -79,6 +82,11 @@ class FaultProject extends Model
     public function hasGithubWebhookConfigured(): bool
     {
         return ! empty($this->github_repo) && ! empty($this->github_webhook_secret);
+    }
+
+    public function isForwardingConfigured(): bool
+    {
+        return $this->forward_enabled && ! empty($this->forward_dsn);
     }
 
     /**
