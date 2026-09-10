@@ -37,10 +37,28 @@
             <nav class="flex-1 overflow-y-auto px-3 py-4">
                 <p class="px-2 pb-1 text-xs font-medium tracking-wide text-gray-400 uppercase">Workspace</p>
                 @isset($organization)
-                    <x-nav-link :href="route('organizations.projects.index', $organization)" :active="request()->routeIs('organizations.projects.*')">
-                        <x-lucide-home class="h-4 w-4" />
-                        Projects
-                    </x-nav-link>
+                    @php
+                        $currentProject = request()->route('project');
+                    @endphp
+                    <div x-data="{ projectsOpen: {{ request()->routeIs('organizations.projects.*') || request()->routeIs('organizations.issues.*') ? 'true' : 'false' }} }">
+                        <div class="flex items-center">
+                            <x-nav-link :href="route('organizations.projects.index', $organization)" :active="request()->routeIs('organizations.projects.*') || request()->routeIs('organizations.issues.*')" class="flex-1">
+                                <x-lucide-home class="h-4 w-4" />
+                                Projects
+                            </x-nav-link>
+                            <button type="button" @click="projectsOpen = !projectsOpen"
+                                    class="mb-0.5 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
+                                <x-lucide-chevron-down class="h-3.5 w-3.5 transition-transform" x-bind:class="{ 'rotate-180': projectsOpen }" />
+                            </button>
+                        </div>
+                        <div x-show="projectsOpen" x-collapse class="ml-4 space-y-0.5 border-l border-gray-200 pl-2">
+                            @foreach($organization->projects()->orderBy('name')->get() as $project)
+                                <x-nav-link :href="route('organizations.projects.show', [$organization, $project])" :active="$currentProject && $currentProject->is($project)" :sub="true">
+                                    {{ $project->platform->icon() }} {{ $project->name }}
+                                </x-nav-link>
+                            @endforeach
+                        </div>
+                    </div>
                     <x-nav-link :href="route('organizations.members.index', $organization)" :active="request()->routeIs('organizations.members.*')">
                         <x-lucide-users class="h-4 w-4" />
                         Members

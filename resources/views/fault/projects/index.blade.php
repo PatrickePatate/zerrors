@@ -43,7 +43,7 @@
                 @forelse($projects as $project)
                     <tr class="hover:bg-gray-50">
                         <td class="flex items-center gap-2 px-5 py-3">
-                            <x-tooltip :message="$project->platform->label()">{{ $project->platform->icon() }}</x-tooltip>
+                            <x-tooltip :message="$project->platform->label()">{{ $project->platform->icon(size: '6') }}</x-tooltip>
                             <a href="{{ route('organizations.projects.show', [$organization, $project]) }}" class="font-semibold text-gray-900 hover:underline">{{ $project->name }}</a>
                         </td>
                         <td class="px-5 py-3 text-gray-600">{{ $project->issues_count }}</td>
