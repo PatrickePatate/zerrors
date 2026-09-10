@@ -6,7 +6,7 @@
     <div class="mb-6 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-gray-900">Projects</h1>
 
-        <x-modal :open-on-error="$errors->has('name') || $errors->has('platform')">
+        <x-modal :open-on-error="$errors->has('name') || $errors->has('platform') || request()->boolean('new')">
             <x-slot:trigger>
                 <x-button type="button">
                     <x-lucide-plus class="h-4 w-4" />

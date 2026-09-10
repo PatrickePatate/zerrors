@@ -34,6 +34,12 @@
                 <x-org-switcher :organization="$organization" />
             @endisset
 
+            @auth
+                <div class="px-3 pt-3">
+                    <x-command-palette :organization="$organization ?? null" />
+                </div>
+            @endauth
+
             <nav class="flex-1 overflow-y-auto px-3 py-4">
                 <p class="px-2 pb-1 text-xs font-medium tracking-wide text-gray-400 uppercase">Workspace</p>
                 @isset($organization)
