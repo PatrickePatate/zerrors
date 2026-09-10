@@ -16,10 +16,10 @@
                 <input type="hidden" name="invite" value="{{ $invite->token }}">
             @endif
 
-            <x-input label="Name" name="name" value="{{ old('name') }}" :error="$errors->first('name')" required autofocus />
-            <x-input label="Email" type="email" name="email" value="{{ old('email', $invite->email ?? '') }}" :error="$errors->first('email')" required />
-            <x-input label="Password" type="password" name="password" :error="$errors->first('password')" required />
-            <x-input label="Confirm password" type="password" name="password_confirmation" required />
+            <x-form.text-input label="Name" name="name" value="{{ old('name') }}" :error="$errors->first('name')" required autofocus />
+            <x-form.text-input label="Email" type="email" name="email" value="{{ old('email', $invite->email ?? '') }}" :error="$errors->first('email')" required />
+            <x-form.text-input label="Password" type="password" name="password" :error="$errors->first('password')" required />
+            <x-form.text-input label="Confirm password" type="password" name="password_confirmation" required />
 
             <x-button type="submit" class="w-full">Create account</x-button>
         </form>
