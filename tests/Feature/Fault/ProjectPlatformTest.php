@@ -46,7 +46,7 @@ class ProjectPlatformTest extends TestCase
 
         $rule = $channel->rules->sole();
         $this->assertSame(NotificationRuleTrigger::OccurrenceThreshold, $rule->trigger);
-        $this->assertSame([1, 10, 100, 1000], $rule->thresholds);
+        $this->assertSame([10, 100, 1000], $rule->thresholds);
         $this->assertTrue($rule->enabled);
     }
 

@@ -46,7 +46,9 @@ class DashboardController extends Controller
 
         $channel->rules()->create([
             'trigger' => NotificationRuleTrigger::OccurrenceThreshold,
-            'thresholds' => [1, 10, 100, 1000],
+            // 1 is intentionally excluded: issueCreated() already emails the org for the first
+            // occurrence, so including it here would double-notify this channel's recipient.
+            'thresholds' => [10, 100, 1000],
         ]);
 
         return redirect()->route('organizations.projects.show', [$organization, $project]);
