@@ -7,9 +7,18 @@
 
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-2">
-            <x-button type="button" wire:click="updateStatus('resolved')" wire:loading.attr="disabled">Resolve</x-button>
-            <x-button type="button" wire:click="updateStatus('ignored')" wire:loading.attr="disabled" variant="secondary">Ignore</x-button>
-            <x-button type="button" wire:click="updateStatus('unresolved')" wire:loading.attr="disabled" variant="secondary">Unresolve</x-button>
+            <x-button type="button" wire:click="updateStatus('resolved')" wire:loading.attr="disabled">
+                <x-lucide-check class="h-4 w-4" />
+                Resolve
+            </x-button>
+            <x-button type="button" wire:click="updateStatus('ignored')" wire:loading.attr="disabled" variant="secondary">
+                <x-lucide-eye-off class="h-4 w-4" />
+                Ignore
+            </x-button>
+            <x-button type="button" wire:click="updateStatus('unresolved')" wire:loading.attr="disabled" variant="secondary">
+                <x-lucide-rotate-ccw class="h-4 w-4" />
+                Unresolve
+            </x-button>
             @if($issue->github_issue_url)
                 <a href="{{ $issue->github_issue_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:underline">
                     <x-lucide-github class="h-4 w-4" />

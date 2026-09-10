@@ -22,9 +22,12 @@ class IssueAnalysis extends Component
     public function analyze(IssueAnalyzer $analyzer): void
     {
         $this->error = null;
+        $this->stream(content: '', replace: true, name: 'analysis-stream');
 
         try {
-            $analyzer->analyze($this->issue);
+            $analyzer->analyze($this->issue, function (string $delta): void {
+                $this->stream(content: e($delta), name: 'analysis-stream');
+            });
             $this->issue->refresh();
         } catch (RuntimeException $e) {
             $this->error = $e->getMessage();
@@ -37,9 +40,12 @@ class IssueAnalysis extends Component
     public function deepen(IssueAnalyzer $analyzer): void
     {
         $this->error = null;
+        $this->stream(content: '', replace: true, name: 'deepen-stream');
 
         try {
-            $analyzer->deepen($this->issue);
+            $analyzer->deepen($this->issue, function (string $delta): void {
+                $this->stream(content: e($delta), name: 'deepen-stream');
+            });
             $this->issue->refresh();
         } catch (RuntimeException $e) {
             $this->error = $e->getMessage();
