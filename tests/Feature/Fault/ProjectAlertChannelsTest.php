@@ -8,7 +8,9 @@ use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\NotificationChannel;
 use App\Models\Organization;
+use App\Models\User;
 use App\Notifications\Fault\IssueAlertNotification;
+use App\Notifications\Fault\IssueCreatedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -129,6 +131,28 @@ class ProjectAlertChannelsTest extends TestCase
         ]);
 
         Http::assertSentCount(2);
+    }
+
+    public function test_a_new_project_default_channel_does_not_double_email_on_the_first_occurrence(): void
+    {
+        Notification::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => true]);
+        $owner = User::factory()->create(['email' => 'owner@example.com']);
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+
+        $this->actingAs($owner)
+            ->post(route('organizations.projects.store', $organization), ['name' => 'API', 'platform' => 'laravel'])
+            ->assertRedirect();
+
+        $project = FaultProject::where('name', 'API')->sole();
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
+
+        // The org-wide "New issue" alert covers the first occurrence; the default
+        // project channel's occurrence-threshold rule must not also fire for it.
+        Notification::assertSentTimes(IssueCreatedNotification::class, 1);
+        Notification::assertSentTimes(IssueAlertNotification::class, 0);
     }
 
     public function test_an_occurrence_threshold_rule_only_fires_on_matching_counts(): void
