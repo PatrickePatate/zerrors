@@ -109,12 +109,11 @@
                                     @foreach($members as $member)
                                         <button type="button" wire:click="assignIssue({{ $issue->id }}, {{ $member->id }})" @click="menuOpen = false"
                                                 class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">
+                                            <img src="{{ $member->avatarUrl() }}" alt="{{ $member->name }}" class="h-4 w-4 shrink-0 rounded-full object-cover">
+                                            <span class="min-w-0 flex-1 truncate">{{ $member->name }}</span>
                                             @if($issue->assigned_to_user_id === $member->id)
                                                 <x-lucide-check class="h-3.5 w-3.5 shrink-0" />
-                                            @else
-                                                <span class="h-3.5 w-3.5 shrink-0"></span>
                                             @endif
-                                            <span class="truncate">{{ $member->name }}</span>
                                         </button>
                                     @endforeach
                                 </div>

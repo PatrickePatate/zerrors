@@ -38,6 +38,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')-
 
 Route::middleware('auth')->group(function () {
     Route::get('/security', [SecurityController::class, 'edit'])->name('security.edit');
+    Route::post('/security/avatar', [SecurityController::class, 'updateAvatar'])->name('security.avatar.update');
+    Route::delete('/security/avatar', [SecurityController::class, 'destroyAvatar'])->name('security.avatar.destroy');
     Route::post('/security/tokens', [SecurityController::class, 'storeToken'])->name('security.tokens.store');
     Route::delete('/security/tokens/{tokenId}', [SecurityController::class, 'destroyToken'])->name('security.tokens.destroy');
 
