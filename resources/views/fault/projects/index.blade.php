@@ -17,15 +17,10 @@
             <h2 class="mb-4 text-sm font-medium text-gray-700">New project</h2>
             <form method="POST" action="{{ route('organizations.projects.store', $organization) }}" class="space-y-4">
                 @csrf
-                <x-input label="Name" name="name" placeholder="Project name" value="{{ old('name') }}" :error="$errors->first('name')" required autofocus />
-                <div>
-                    <label for="platform" class="mb-1 block text-sm font-medium text-gray-700">Type</label>
-                    <select id="platform" name="platform" class="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                        @foreach(\App\Models\FaultProject::PLATFORMS as $value => $label)
-                            <option value="{{ $value }}" @selected(old('platform') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <x-form.text-input label="Name" name="name" placeholder="Project name" value="{{ old('name') }}" :error="$errors->first('name')" required autofocus />
+                <x-form.select label="Type" id="platform" name="platform"
+                                :options="collect(\App\Enums\FaultPlatform::cases())->mapWithKeys(fn ($platform) => [$platform->value => $platform->label()])"
+                                :selected="old('platform')" />
                 <div class="flex justify-end gap-2">
                     <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
                     <x-button type="submit">Create</x-button>
@@ -37,7 +32,7 @@
     <x-card :padding="false">
         <table class="w-full text-left text-sm">
             <thead>
-                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
+                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-600">
                     <th class="px-5 py-3 font-medium">Project</th>
                     <th class="px-5 py-3 font-medium">Issues</th>
                     <th class="px-5 py-3 font-medium">Unresolved</th>
@@ -47,9 +42,9 @@
             <tbody class="divide-y divide-gray-100">
                 @forelse($projects as $project)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-5 py-3">
-                            <a href="{{ route('organizations.projects.show', [$organization, $project]) }}" class="font-medium text-gray-900 hover:underline">{{ $project->name }}</a>
-                            <x-badge class="ml-2">{{ \App\Models\FaultProject::PLATFORMS[$project->platform] ?? $project->platform }}</x-badge>
+                        <td class="flex items-center gap-2 px-5 py-3">
+                            <x-tooltip :message="$project->platform->label()">{{ $project->platform->icon() }}</x-tooltip>
+                            <a href="{{ route('organizations.projects.show', [$organization, $project]) }}" class="font-semibold text-gray-900 hover:underline">{{ $project->name }}</a>
                         </td>
                         <td class="px-5 py-3 text-gray-600">{{ $project->issues_count }}</td>
                         <td class="px-5 py-3">

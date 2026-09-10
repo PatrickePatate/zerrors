@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
+use App\Support\Fault\GithubCommitFetcher;
 use App\Support\Fault\GithubIssueCreator;
 use Livewire\Component;
 use RuntimeException;
@@ -20,6 +21,8 @@ class IssueActions extends Component
     public ?int $assignedToUserId = null;
 
     public ?string $githubError = null;
+
+    public ?string $commitError = null;
 
     public function mount(Organization $organization, FaultProject $project, FaultIssue $issue): void
     {
@@ -58,10 +61,30 @@ class IssueActions extends Component
         }
     }
 
+    public function fetchCommit(GithubCommitFetcher $fetcher): void
+    {
+        $this->commitError = null;
+
+        $release = $this->issue->linkedRelease();
+
+        if (! $release || ! $release->hasCommit()) {
+            $this->commitError = "No release with a linked commit was found for \"{$this->issue->first_seen_release}\".";
+
+            return;
+        }
+
+        try {
+            $fetcher->fetch($release);
+        } catch (RuntimeException $e) {
+            $this->commitError = $e->getMessage();
+        }
+    }
+
     public function render()
     {
         return view('livewire.issue-actions', [
             'members' => $this->organization->users()->orderBy('name')->get(),
+            'linkedRelease' => $this->issue->linkedRelease(),
         ]);
     }
 }
