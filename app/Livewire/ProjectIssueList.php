@@ -44,6 +44,22 @@ class ProjectIssueList extends Component
         $this->reset('search', 'level', 'status', 'assigned');
     }
 
+    public function updateIssueStatus(int $issueId, string $status): void
+    {
+        abort_unless(in_array($status, ['unresolved', 'resolved', 'ignored'], true), 422);
+
+        $this->project->issues()->findOrFail($issueId)->update(['status' => $status]);
+    }
+
+    public function assignIssue(int $issueId, ?int $userId): void
+    {
+        if ($userId !== null && ! $this->organization->users()->where('user_id', $userId)->exists()) {
+            return;
+        }
+
+        $this->project->issues()->findOrFail($issueId)->update(['assigned_to_user_id' => $userId]);
+    }
+
     public function render()
     {
         $issues = $this->project->issues()
@@ -60,6 +76,9 @@ class ProjectIssueList extends Component
             ->orderByDesc('last_seen_at')
             ->paginate(25);
 
-        return view('livewire.project-issue-list', ['issues' => $issues]);
+        return view('livewire.project-issue-list', [
+            'issues' => $issues,
+            'members' => $this->organization->users()->orderBy('name')->get(),
+        ]);
     }
 }
