@@ -27,7 +27,7 @@
                 </div>
 
                 <div class="mt-4">
-                    <livewire:issue-actions :organization="$organization" :project="$project" :issue="$issue" />
+                    <livewire:issue-actions :organization="$organization" :project="$project" :issue="$issue" :event="$currentEvent" />
                 </div>
             </x-card>
 

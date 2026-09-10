@@ -3,6 +3,7 @@
 namespace Tests\Feature\Fault;
 
 use App\Livewire\IssueActions;
+use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
@@ -48,6 +49,92 @@ class IssueActionsLivewireTest extends TestCase
             ->set('assignedToUserId', (string) $member->id);
 
         $this->assertSame($member->id, $issue->fresh()->assigned_to_user_id);
+    }
+
+    public function test_it_unassigns_the_issue(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $issue = FaultIssue::factory()->create([
+            'fault_project_id' => $project->id,
+            'assigned_to_user_id' => $owner->id,
+        ]);
+
+        Livewire::actingAs($owner)
+            ->test(IssueActions::class, ['organization' => $organization, 'project' => $project, 'issue' => $issue])
+            ->set('assignedToUserId', '')
+            ->assertHasNoErrors();
+
+        $this->assertNull($issue->fresh()->assigned_to_user_id);
+    }
+
+    public function test_it_shows_a_quick_peek_of_the_events_user_browser_and_context_url(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
+        $event = FaultEvent::factory()->create([
+            'fault_project_id' => $project->id,
+            'fault_issue_id' => $issue->id,
+            'payload' => ['user' => ['email' => 'demo@example.com']],
+            'request' => [
+                'url' => 'https://example.test/api/list',
+                'headers' => [
+                    'user-agent' => ['Mozilla/5.0 Gecko/20100101 Firefox/154.0'],
+                    'x-current-page-url' => ['https://example.test/dashboard'],
+                ],
+            ],
+        ]);
+
+        Livewire::actingAs($owner)
+            ->test(IssueActions::class, ['organization' => $organization, 'project' => $project, 'issue' => $issue, 'event' => $event])
+            ->assertSee('demo@example.com')
+            ->assertSee('Firefox')
+            ->assertSee('https://example.test/dashboard');
+    }
+
+    public function test_it_hides_the_quick_peek_without_an_event(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
+
+        Livewire::actingAs($owner)
+            ->test(IssueActions::class, ['organization' => $organization, 'project' => $project, 'issue' => $issue])
+            ->assertDontSee('Firefox');
+    }
+
+    public function test_it_uses_real_member_ids_as_assignment_option_values(): void
+    {
+        // The "Assigned to" select is a custom Alpine component: its options
+        // are JSON embedded in the rendered HTML, keyed by member id. A prior
+        // bug built that array via `[...$members->pluck('name', 'id')]`,
+        // which silently discards integer keys and renumbers options from 0,
+        // so picking a member sent the wrong id (or one belonging to nobody).
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $organization->users()->attach($member->id, ['role' => 'member']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
+
+        $html = Livewire::actingAs($owner)
+            ->test(IssueActions::class, ['organization' => $organization, 'project' => $project, 'issue' => $issue])
+            ->html();
+
+        preg_match("/JSON\.parse\('(.+?)'\)/", $html, $matches);
+        $items = json_decode(json_decode('"'.$matches[1].'"'), true);
+
+        $memberOption = collect($items)->firstWhere('title', $member->name);
+
+        $this->assertSame((string) $member->id, $memberOption['value']);
     }
 
     public function test_it_creates_a_linked_github_issue(): void
