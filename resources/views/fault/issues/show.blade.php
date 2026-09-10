@@ -35,7 +35,7 @@
             @if($latestEvent && $latestEvent->exception)
                 <x-card>
                     <h2 class="mb-3 text-sm font-medium text-gray-700">Stack trace <span class="font-normal text-gray-400">(latest event)</span></h2>
-                    @include('fault.issues.partials.stacktrace', ['exception' => $latestEvent->exception])
+                    <x-stacktrace :exception="$latestEvent->exception" />
                 </x-card>
             @endif
 
