@@ -41,4 +41,19 @@ class FaultIssue extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
     }
+
+    /**
+     * The release this issue was first seen in, if it matches a release recorded
+     * for the project — used to surface the GitHub commit that likely introduced it.
+     */
+    public function linkedRelease(): ?Release
+    {
+        if (! $this->first_seen_release) {
+            return null;
+        }
+
+        return Release::where('fault_project_id', $this->fault_project_id)
+            ->where('version', $this->first_seen_release)
+            ->first();
+    }
 }

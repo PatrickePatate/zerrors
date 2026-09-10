@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fault;
 
+use App\Enums\FaultPlatform;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Models\User;
@@ -41,7 +42,7 @@ class ProjectPlatformTest extends TestCase
             ->assertRedirect();
 
         $project->refresh();
-        $this->assertSame('php', $project->platform);
+        $this->assertSame(FaultPlatform::Php, $project->platform);
         $this->assertSame('acme/api', $project->github_repo);
         $this->assertSame('ghp_secret', $project->github_token);
     }

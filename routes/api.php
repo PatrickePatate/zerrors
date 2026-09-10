@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\GithubWebhookController;
 use App\Http\Controllers\Api\IssueApiController;
 use App\Http\Controllers\Api\OrganizationApiController;
 use App\Http\Controllers\Api\ProjectApiController;
@@ -15,6 +16,12 @@ Route::middleware('throttle:fault-ingest')->group(function () {
     Route::post('/{projectId}/envelope/', [IngestController::class, 'envelope'])->whereNumber('projectId');
     Route::post('/{projectId}/store/', [IngestController::class, 'store'])->whereNumber('projectId');
 });
+
+// Same reasoning: GitHub can't be given custom auth headers when configuring a
+// webhook, so the project is identified by its public key in the URL and the
+// request is authenticated via GitHub's HMAC payload signature instead.
+Route::post('/webhooks/github/{publicKey}', [GithubWebhookController::class, 'handle'])
+    ->middleware('throttle:fault-ingest');
 
 // Read-only JSON API for personal access tokens (Laravel Sanctum).
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {

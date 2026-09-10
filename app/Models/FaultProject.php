@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\FaultPlatform;
 use Database\Factories\FaultProjectFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,23 +15,16 @@ class FaultProject extends Model
     /** @use HasFactory<FaultProjectFactory> */
     use HasFactory;
 
-    const PLATFORMS = [
-        'php' => 'PHP',
-        'laravel' => 'Laravel',
-        'symfony' => 'Symfony',
-        'wordpress' => 'WordPress',
-        'nodejs' => 'Node.js',
-        'other' => 'Other',
-    ];
-
     protected $fillable = [
         'organization_id', 'name', 'slug', 'platform', 'public_key', 'secret_key',
-        'retention_days', 'github_repo', 'github_token',
+        'retention_days', 'github_repo', 'github_token', 'production_branch', 'github_webhook_secret',
         'slack_webhook_url', 'telegram_bot_token', 'telegram_chat_id', 'notify_email',
     ];
 
     protected $casts = [
+        'platform' => FaultPlatform::class,
         'github_token' => 'encrypted',
+        'github_webhook_secret' => 'encrypted',
         'telegram_bot_token' => 'encrypted',
     ];
 
@@ -39,6 +33,7 @@ class FaultProject extends Model
         static::creating(function (self $project): void {
             $project->slug ??= Str::slug($project->name).'-'.Str::lower(Str::random(6));
             $project->public_key ??= Str::random(32);
+            $project->production_branch ??= 'main';
         });
     }
 
@@ -76,6 +71,22 @@ class FaultProject extends Model
     public function hasGithubConfigured(): bool
     {
         return ! empty($this->github_repo) && ! empty($this->github_token);
+    }
+
+    public function hasGithubWebhookConfigured(): bool
+    {
+        return ! empty($this->github_repo) && ! empty($this->github_webhook_secret);
+    }
+
+    /**
+     * The URL to register as a "push" webhook on the GitHub repository, so that
+     * a release is created automatically whenever the production branch moves.
+     */
+    public function githubWebhookUrl(?string $host = null): string
+    {
+        $host = $host ?? request()->getSchemeAndHttpHost();
+
+        return "{$host}/api/webhooks/github/{$this->public_key}";
     }
 
     public function hasSlackConfigured(): bool
