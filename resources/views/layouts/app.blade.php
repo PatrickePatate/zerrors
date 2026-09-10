@@ -82,11 +82,13 @@
             </nav>
 
             <div class="border-t border-gray-200 px-3 py-3">
-                <a href="/horizon" target="_blank"
-                   class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-                    <x-lucide-zap class="h-4 w-4" />
-                    Horizon queues
-                </a>
+                @can('viewHorizon')
+                    <a href="/horizon" target="_blank"
+                       class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                        <x-lucide-zap class="h-4 w-4" />
+                        Horizon queues
+                    </a>
+                @endcan
                 <a href="https://docs.sentry.io/platforms/php/guides/laravel/" target="_blank"
                    class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900">
                     <x-lucide-book-open class="h-4 w-4" />
