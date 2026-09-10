@@ -84,6 +84,62 @@ document.addEventListener('alpine:init', () => {
             });
         },
     }));
+
+    // Backs <x-command-palette>: a Pines-style cmd+k command palette. Alpine
+    // owns open/close + keyboard roving-highlight state; the results list
+    // itself is rendered server-side by the wrapped Livewire component, so
+    // the "active" item is tracked by DOM element rather than by index into
+    // a JS array.
+    Alpine.data('commandPalette', () => ({
+        open: false,
+        activeIndex: 0,
+
+        init() {
+            this.$watch('open', (value) => {
+                if (value) {
+                    this.activeIndex = 0;
+                    // $refs.panel wraps the nested Livewire command-palette component;
+                    // Alpine's $refs don't reach into a Livewire child's own subtree, so
+                    // the search input and results are found by querying from here instead.
+                    this.$nextTick(() => this.$refs.panel?.querySelector('input')?.focus());
+                }
+            });
+        },
+
+        onGlobalKeydown(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                this.open = !this.open;
+            }
+        },
+
+        items() {
+            return this.$refs.panel
+                ? Array.from(this.$refs.panel.querySelectorAll('[data-command-item]'))
+                : [];
+        },
+
+        isActive(el) {
+            return this.items()[this.activeIndex] === el;
+        },
+
+        setActive(el) {
+            this.activeIndex = this.items().indexOf(el);
+        },
+
+        moveActive(delta) {
+            const items = this.items();
+            if (!items.length) {
+                return;
+            }
+            this.activeIndex = (this.activeIndex + delta + items.length) % items.length;
+            items[this.activeIndex].scrollIntoView({ block: 'nearest' });
+        },
+
+        selectActive() {
+            this.items()[this.activeIndex]?.click();
+        },
+    }));
 });
 
 Livewire.start();
