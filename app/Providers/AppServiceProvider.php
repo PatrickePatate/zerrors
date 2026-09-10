@@ -23,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Keyed per project (not per IP): a project's SDK instances may share
-        // or rotate IPs, but every event carries the project id in the URL.
-        RateLimiter::for('fault-ingest', fn (Request $request) => Limit::perMinute(300)->by($request->route('projectId')));
+        // or rotate IPs, but every event carries the project id (ingest routes)
+        // or public key (the GitHub webhook route) in the URL.
+        RateLimiter::for('fault-ingest', fn (Request $request) => Limit::perMinute(300)->by(
+            $request->route('projectId') ?? $request->route('publicKey')
+        ));
     }
 }
