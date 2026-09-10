@@ -32,7 +32,7 @@ class IssueAlertNotifier
      * channel rules see every occurrence. A channel matching both rules for
      * the same occurrence is only notified once.
      */
-    public function issueOccurrence(FaultIssue $issue, bool $isFirstOccurrence = false): void
+    public function issueOccurrence(FaultIssue $issue): void
     {
         $matched = [];
 
@@ -40,12 +40,6 @@ class IssueAlertNotifier
             [NotificationRuleTrigger::EveryEvent, 'New occurrence'],
             [NotificationRuleTrigger::OccurrenceThreshold, "Occurrence #{$issue->times_seen}"],
         ] as [$trigger, $label]) {
-            // The threshold-1 milestone is already covered by issueCreated()'s "New issue" alert,
-            // so skip it here to avoid double-notifying for the same first occurrence.
-            if ($isFirstOccurrence && $trigger === NotificationRuleTrigger::OccurrenceThreshold) {
-                continue;
-            }
-
             foreach ($this->matchingChannels($issue, $trigger) as $channel) {
                 $matched[$channel->id] ??= [$channel, $label];
             }
