@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.3",
         "blade-ui-kit/blade-icons": "^1.10",
+        "codeat3/blade-devicons": "^1.9",
         "laravel/ai": "^0.11.2",
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.49",
