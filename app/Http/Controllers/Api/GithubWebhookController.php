@@ -30,13 +30,15 @@ class GithubWebhookController extends Controller
 
         abort_unless($request->header('X-GitHub-Event') === 'push', Response::HTTP_BAD_REQUEST, 'Unsupported event');
 
-        $branch = Str::after((string) $request->input('ref'), 'refs/heads/');
+        $payload = $this->payload($request);
+
+        $branch = Str::after((string) ($payload['ref'] ?? ''), 'refs/heads/');
 
         if ($branch === '' || $branch !== $project->production_branch) {
             return response()->json(['message' => "Ignored: push was to \"{$branch}\", not the production branch."]);
         }
 
-        $headCommit = $request->input('head_commit');
+        $headCommit = $payload['head_commit'] ?? null;
 
         abort_unless(is_array($headCommit) && ! empty($headCommit['id']), Response::HTTP_UNPROCESSABLE_ENTITY, 'Missing head_commit in payload');
 
@@ -53,6 +55,24 @@ class GithubWebhookController extends Controller
         );
 
         return response()->json(['release' => $release->version], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Decodes the push event body. GitHub sends JSON directly when the webhook's
+     * content type is configured as "application/json", but defaults to
+     * "application/x-www-form-urlencoded" (the JSON nested inside a "payload"
+     * form field) unless that's changed when the webhook is created — support
+     * both so a webhook left on GitHub's default still creates releases.
+     *
+     * @return array<string, mixed>
+     */
+    protected function payload(Request $request): array
+    {
+        if ($request->has('payload') && is_string($request->input('payload'))) {
+            return json_decode($request->input('payload'), true) ?? [];
+        }
+
+        return $request->json()->all();
     }
 
     /**
