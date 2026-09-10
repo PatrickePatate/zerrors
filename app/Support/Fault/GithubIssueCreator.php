@@ -18,10 +18,17 @@ class GithubIssueCreator
 
         $latestEvent = $issue->events()->latest('occurred_at')->first();
 
+        $issueUrl = route('organizations.issues.show', [
+            'organization' => $project->organization,
+            'project' => $project,
+            'issue' => $issue,
+        ]);
+
         $body = "**{$issue->title}**\n\n"
             .($issue->culprit ? "Culprit: `{$issue->culprit}`\n" : '')
             ."Level: {$issue->level} · seen {$issue->times_seen} time(s)\n\n"
             .($latestEvent?->message ? "```\n{$latestEvent->message}\n```\n\n" : '')
+            ."[View in Zerrors]({$issueUrl})\n\n"
             .'Reported by Zerrors.';
 
         $response = Http::withToken($project->github_token)
