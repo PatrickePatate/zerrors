@@ -6,7 +6,9 @@ use App\Ai\Agents\IssueAnalystAgent;
 use App\Ai\Agents\IssueDeepAnalystAgent;
 use App\Models\FaultIssue;
 use App\Models\Organization;
+use Closure;
 use Illuminate\Support\Facades\Config;
+use Laravel\Ai\Streaming\Events\TextDelta;
 use RuntimeException;
 
 class IssueAnalyzer
@@ -14,16 +16,25 @@ class IssueAnalyzer
     /**
      * Ask the organization's configured AI provider to suggest a cause and fix
      * for an issue, store the result on it, and return the analysis text.
+     *
+     * When $onDelta is given, it is invoked with each chunk of text as it
+     * streams in from the provider, so the UI can render progressively.
      */
-    public function analyze(FaultIssue $issue): string
+    public function analyze(FaultIssue $issue, ?Closure $onDelta = null): string
     {
         $organization = $this->organizationFor($issue);
 
-        $response = (new IssueAnalystAgent)->prompt(
+        $response = (new IssueAnalystAgent)->stream(
             $this->buildPrompt($issue),
             provider: $organization->ai_provider,
             model: $organization->ai_model ?: null,
         );
+
+        foreach ($response as $event) {
+            if ($event instanceof TextDelta && $onDelta) {
+                $onDelta($event->delta);
+            }
+        }
 
         $issue->forceFill([
             'ai_analysis' => $response->text,
@@ -36,8 +47,11 @@ class IssueAnalyzer
     /**
      * Ask for a much more thorough explanation, building on the brief analysis
      * already stored on the issue, store the result, and return it.
+     *
+     * When $onDelta is given, it is invoked with each chunk of text as it
+     * streams in from the provider, so the UI can render progressively.
      */
-    public function deepen(FaultIssue $issue): string
+    public function deepen(FaultIssue $issue, ?Closure $onDelta = null): string
     {
         if (! $issue->ai_analysis) {
             throw new RuntimeException('Run the initial AI analysis before asking for a deeper explanation.');
@@ -45,11 +59,17 @@ class IssueAnalyzer
 
         $organization = $this->organizationFor($issue);
 
-        $response = (new IssueDeepAnalystAgent)->prompt(
+        $response = (new IssueDeepAnalystAgent)->stream(
             $this->buildDeepPrompt($issue),
             provider: $organization->ai_provider,
             model: $organization->ai_model ?: null,
         );
+
+        foreach ($response as $event) {
+            if ($event instanceof TextDelta && $onDelta) {
+                $onDelta($event->delta);
+            }
+        }
 
         $issue->forceFill([
             'ai_deep_analysis' => $response->text,

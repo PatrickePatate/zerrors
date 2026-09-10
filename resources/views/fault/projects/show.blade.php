@@ -96,6 +96,11 @@
                                 <button type="button" @click="tab = 'forwarding'"
                                         :class="tab === 'forwarding' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
                                         class="border-b-2 px-3 pb-2 text-sm font-medium">Forwarding</button>
+                                @if($organization->roleFor(auth()->user()) === 'owner')
+                                    <button type="button" @click="tab = 'move'"
+                                            :class="tab === 'move' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                                            class="border-b-2 px-3 pb-2 text-sm font-medium">Move</button>
+                                @endif
                             </div>
 
                             <div x-show="tab === 'details'">
@@ -195,6 +200,41 @@
                                     </div>
                                 </form>
                             </div>
+
+                            @if($organization->roleFor(auth()->user()) === 'owner')
+                                @php
+                                    $destinationOrganizations = auth()->user()->organizations()
+                                        ->wherePivot('role', 'owner')
+                                        ->where('organizations.id', '!=', $organization->id)
+                                        ->orderBy('name')
+                                        ->get();
+                                @endphp
+
+                                <div x-show="tab === 'move'" x-cloak>
+                                    @if($destinationOrganizations->isEmpty())
+                                        <p class="text-sm text-gray-500">
+                                            You need to own another organization before you can move this project.
+                                        </p>
+                                    @else
+                                        <form method="POST" action="{{ route('organizations.projects.transfer', [$organization, $project]) }}"
+                                              x-data @submit="if (! confirm('Move this project to the selected organization? Its issues, events, and settings move with it.')) $event.preventDefault()"
+                                              class="space-y-4">
+                                            @csrf
+                                            <x-form.select label="Destination organization" id="transfer-organization" name="organization_id"
+                                                            :options="$destinationOrganizations->pluck('name', 'id')"
+                                                            :error="$errors->first('organization_id')" />
+                                            <p class="text-xs text-gray-400">
+                                                You must own both this organization and the destination organization to move a project.
+                                            </p>
+
+                                            <div class="flex justify-end gap-2">
+                                                <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
+                                                <x-button type="submit">Move project</x-button>
+                                            </div>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </x-modal>
 

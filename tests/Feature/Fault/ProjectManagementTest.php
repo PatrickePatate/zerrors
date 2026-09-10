@@ -41,4 +41,58 @@ class ProjectManagementTest extends TestCase
 
         $this->assertSame($originalKey, $project->fresh()->public_key);
     }
+
+    public function test_owner_of_both_organizations_can_move_a_project(): void
+    {
+        $source = Organization::factory()->create();
+        $destination = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $source->users()->attach($owner->id, ['role' => 'owner']);
+        $destination->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $source->id]);
+
+        $this->actingAs($owner)
+            ->post(route('organizations.projects.transfer', [$source, $project]), [
+                'organization_id' => $destination->id,
+            ])
+            ->assertRedirect(route('organizations.projects.show', [$destination, $project]));
+
+        $this->assertSame($destination->id, $project->fresh()->organization_id);
+    }
+
+    public function test_admin_cannot_move_a_project(): void
+    {
+        $source = Organization::factory()->create();
+        $destination = Organization::factory()->create();
+        $admin = User::factory()->create();
+        $source->users()->attach($admin->id, ['role' => 'admin']);
+        $destination->users()->attach($admin->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $source->id]);
+
+        $this->actingAs($admin)
+            ->post(route('organizations.projects.transfer', [$source, $project]), [
+                'organization_id' => $destination->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame($source->id, $project->fresh()->organization_id);
+    }
+
+    public function test_owner_cannot_move_a_project_to_an_organization_they_do_not_own(): void
+    {
+        $source = Organization::factory()->create();
+        $destination = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $source->users()->attach($owner->id, ['role' => 'owner']);
+        $destination->users()->attach($owner->id, ['role' => 'member']);
+        $project = FaultProject::factory()->create(['organization_id' => $source->id]);
+
+        $this->actingAs($owner)
+            ->post(route('organizations.projects.transfer', [$source, $project]), [
+                'organization_id' => $destination->id,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame($source->id, $project->fresh()->organization_id);
+    }
 }
