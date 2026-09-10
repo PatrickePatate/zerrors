@@ -34,6 +34,21 @@ class IssueAnalysis extends Component
         }
     }
 
+    public function deepen(IssueAnalyzer $analyzer): void
+    {
+        $this->error = null;
+
+        try {
+            $analyzer->deepen($this->issue);
+            $this->issue->refresh();
+        } catch (RuntimeException $e) {
+            $this->error = $e->getMessage();
+        } catch (Throwable $e) {
+            report($e);
+            $this->error = 'The AI provider request failed: '.$e->getMessage();
+        }
+    }
+
     public function render()
     {
         return view('livewire.issue-analysis', [

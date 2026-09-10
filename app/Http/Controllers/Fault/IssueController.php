@@ -117,6 +117,24 @@ class IssueController extends Controller
         return back()->with('status', 'Analysis complete.');
     }
 
+    public function deepen(Organization $organization, FaultProject $project, FaultIssue $issue, IssueAnalyzer $analyzer)
+    {
+        abort_unless($project->organization_id === $organization->id, 404);
+        abort_unless($issue->fault_project_id === $project->id, 404);
+
+        try {
+            $analyzer->deepen($issue);
+        } catch (RuntimeException $e) {
+            return back()->withErrors(['ai' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['ai' => 'The AI provider request failed: '.$e->getMessage()]);
+        }
+
+        return back()->with('status', 'Deeper explanation ready.');
+    }
+
     public function createGithubIssue(Organization $organization, FaultProject $project, FaultIssue $issue, GithubIssueCreator $creator)
     {
         abort_unless($project->organization_id === $organization->id, 404);
