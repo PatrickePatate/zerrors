@@ -6,27 +6,7 @@
     <div class="mb-6 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-gray-900">Projects</h1>
 
-        <x-modal :open-on-error="$errors->has('name') || $errors->has('platform') || request()->boolean('new')">
-            <x-slot:trigger>
-                <x-button type="button">
-                    <x-lucide-plus class="h-4 w-4" />
-                    New project
-                </x-button>
-            </x-slot:trigger>
-
-            <h2 class="mb-4 text-sm font-medium text-gray-700">New project</h2>
-            <form method="POST" action="{{ route('organizations.projects.store', $organization) }}" class="space-y-4">
-                @csrf
-                <x-form.text-input label="Name" name="name" placeholder="Project name" value="{{ old('name') }}" :error="$errors->first('name')" required autofocus />
-                <x-form.select label="Type" id="platform" name="platform"
-                                :options="collect(\App\Enums\FaultPlatform::cases())->mapWithKeys(fn ($platform) => [$platform->value => $platform->label()])"
-                                :selected="old('platform')" />
-                <div class="flex justify-end gap-2">
-                    <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
-                    <x-button type="submit">Create</x-button>
-                </div>
-            </form>
-        </x-modal>
+        <livewire:project-creation-wizard :organization="$organization" />
     </div>
 
     <x-table>

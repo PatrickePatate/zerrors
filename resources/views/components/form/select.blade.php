@@ -63,7 +63,7 @@
                 class="fixed z-50 mt-1 max-h-56 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none"
                 x-cloak>
                 <template x-for="item in items" :key="item.value">
-                    <li @click="select(item)"
+                    <li @click.stop="select(item)"
                         @mousemove="activeItem = item"
                         :id="item.value + '-' + id"
                         :class="isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'"

@@ -1,13 +1,13 @@
 @props(['value'])
 
-<div {{ $attributes->class('inline-flex items-center gap-2 rounded bg-gray-100 px-1.5 py-1 text-xs text-gray-600 transition-colors') }}
+<div {{ $attributes->class('flex items-start gap-2 rounded bg-gray-100 px-1.5 py-1 text-xs text-gray-600 transition-colors') }}
      x-data="{ copied: false }"
      :class="copied && 'bg-gray-900/5 ring-1 ring-gray-900/10'"
 >
-    <code>{{ $value }}</code>
+    <code class="min-w-0 flex-1 break-all">{{ $value }}</code>
     <button type="button"
             @click="$clipboard(@js($value)); copied = true; clearTimeout($el._copiedTimeout); $el._copiedTimeout = setTimeout(() => copied = false, 1500)"
-            class="relative text-gray-500 transition hover:text-gray-700 active:scale-90"
+            class="relative shrink-0 text-gray-500 transition hover:text-gray-700 active:scale-90"
     >
         <span class="relative block h-3.5 w-3.5">
             <x-lucide-copy-check
