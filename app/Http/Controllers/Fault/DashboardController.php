@@ -62,21 +62,11 @@ class DashboardController extends Controller
         $data = $request->validate([
             'platform' => ['required', Rule::enum(FaultPlatform::class)],
             'github_repo' => ['nullable', 'string', 'regex:/^[\w.-]+\/[\w.-]+$/'],
-            'github_token' => ['nullable', 'string'],
             'production_branch' => ['nullable', 'string', 'max:255'],
-            'github_webhook_secret' => ['nullable', 'string'],
         ]);
-
-        if (empty($data['github_token'])) {
-            unset($data['github_token']);
-        }
 
         if (empty($data['production_branch'])) {
             unset($data['production_branch']);
-        }
-
-        if (empty($data['github_webhook_secret'])) {
-            unset($data['github_webhook_secret']);
         }
 
         $project->update($data);
@@ -165,23 +155,5 @@ class DashboardController extends Controller
         app(AuditLogger::class)->log($organization, $request->user(), 'project.key_rotated', $project->name);
 
         return back()->with('status', 'DSN key rotated — update it wherever this project\'s SDK is configured.');
-    }
-
-    /**
-     * Generates a fresh GitHub webhook secret and flashes it once, uneditable
-     * afterwards, so the admin can paste it into the GitHub webhook settings.
-     */
-    public function generateGithubWebhookSecret(Request $request, Organization $organization, FaultProject $project)
-    {
-        abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
-
-        $secret = Str::random(40);
-
-        $project->update(['github_webhook_secret' => $secret]);
-
-        app(AuditLogger::class)->log($organization, $request->user(), 'project.github_webhook_secret_rotated', $project->name);
-
-        return back()->with('status', 'New webhook secret generated.')->with('githubWebhookSecret', $secret);
     }
 }

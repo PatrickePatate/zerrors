@@ -63,6 +63,52 @@ This starts the app server, queue worker, and Vite dev server together. Visit th
 
 Once you've created a project, use its DSN with any [Sentry SDK](https://docs.sentry.io/platforms/) exactly as you would with Sentry — Zerrors implements the same ingestion endpoints.
 
+## Setting up the GitHub App
+
+Zerrors uses a [GitHub App](https://docs.github.com/en/apps) (not a personal access token) to create issues in your repos and to receive push events for releases. Each organization installs the app once, then picks a repo per project.
+
+1. Go to **github.com/settings/apps/new** (or your GitHub org's equivalent) and create a new app with:
+   - **Homepage URL**: your Zerrors instance URL.
+   - **Callback URL** (under "Identifying and authorizing users") and **Setup URL** (under "Post installation"): both set to `https://your-domain.com/integrations/github/callback`.
+   - Check **"Redirect on update"** under "Post installation" — this makes GitHub re-fire the Setup URL whenever the installation changes (e.g. repos added/removed), not just on first install.
+   - Leave **"Request user authorization (OAuth) during installation"** unchecked — Zerrors authenticates as the app (via a private key), not as the installing user, so no user OAuth exchange is needed.
+   - **Webhook URL**: `https://your-domain.com/api/webhooks/github`, with a webhook secret you generate yourself (keep it, you'll need it below).
+   - **Webhook events**: subscribe to `push`.
+   - **Repository permissions**: `Contents: Read-only`, `Issues: Read and write`.
+   - **Where can this GitHub App be installed?**: "Any account" (or "Only on this account" if it's just for you).
+2. After creating the app, note its **App ID**, generate a **Client secret**, and generate a **private key** (downloads a `.pem` file). Also note the app's **slug** (the URL-friendly name shown in its settings URL).
+3. Add these to your `.env`:
+   ```
+   GITHUB_APP_ID=123456
+   GITHUB_APP_SLUG=your-app-slug
+   GITHUB_APP_CLIENT_ID=Iv1.xxxxxxxxxxxx
+   GITHUB_APP_CLIENT_SECRET=xxxxxxxxxxxx
+   GITHUB_APP_WEBHOOK_SECRET=xxxxxxxxxxxx
+   GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMII...\n-----END RSA PRIVATE KEY-----\n"
+   ```
+   For `GITHUB_APP_PRIVATE_KEY`, paste the `.pem` contents on one line with `\n` in place of real newlines.
+4. In Zerrors, go to an organization's **Settings → Integrations** and click **Connect GitHub** to install the app on your account/org and authorize it.
+5. In each project's settings, set the **GitHub repo** (`owner/repo`) you want issues and releases linked to.
+
+## Setting up the Slack App
+
+Zerrors uses a [Slack App](https://api.slack.com/apps) with OAuth so alerts post as a bot into channels you pick, instead of pasting an incoming webhook URL per channel.
+
+1. Go to **api.slack.com/apps** and create a new app ("From scratch") in your workspace.
+2. Under **OAuth & Permissions**:
+   - Add a **Redirect URL**: `https://your-domain.com/integrations/slack/callback`.
+   - Add **Bot Token Scopes**: `chat:write`, `channels:read`, `groups:read`.
+3. Under **Basic Information**, note the **Client ID**, **Client Secret**, and **Signing Secret**.
+4. Add these to your `.env`:
+   ```
+   SLACK_APP_CLIENT_ID=xxxxxxxxxxxx
+   SLACK_APP_CLIENT_SECRET=xxxxxxxxxxxx
+   SLACK_APP_SIGNING_SECRET=xxxxxxxxxxxx
+   SLACK_APP_SCOPES=chat:write,channels:read,groups:read
+   ```
+5. In Zerrors, go to an organization's **Settings → Integrations** and click **Connect Slack** to authorize the app for your workspace.
+6. In a project's notification channels, add a Slack channel — it's now picked from a list fetched from your workspace instead of a webhook URL.
+
 ## Testing
 
 ```bash

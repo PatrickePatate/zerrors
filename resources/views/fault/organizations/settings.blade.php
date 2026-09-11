@@ -8,6 +8,50 @@
     @if(in_array($myRole, ['owner', 'admin']))
         <livewire:organization-general-settings :organization="$organization" />
         <livewire:organization-ai-settings :organization="$organization" />
+
+        <x-card class="mb-6">
+            <h2 class="mb-1 text-sm font-medium text-gray-700">GitHub</h2>
+            <p class="mb-3 text-sm text-gray-500">Connects a GitHub App installation, used for creating linked issues and recording releases from pushes.</p>
+
+            @if($organization->hasGithubConnected())
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-700">
+                        Connected to <strong>{{ $organization->github_account_login }}</strong> ({{ $organization->github_account_type }})
+                    </p>
+                    <form method="POST" action="{{ route('integrations.github.disconnect', $organization) }}">
+                        @csrf
+                        @method('DELETE')
+                        <x-button type="submit" variant="secondary">Disconnect</x-button>
+                    </form>
+                </div>
+            @else
+                <a href="{{ route('integrations.github.redirect', $organization) }}">
+                    <x-button type="button">Connect GitHub</x-button>
+                </a>
+            @endif
+        </x-card>
+
+        <x-card class="mb-6">
+            <h2 class="mb-1 text-sm font-medium text-gray-700">Slack</h2>
+            <p class="mb-3 text-sm text-gray-500">Connects a Slack App installation, used for sending issue alerts to a channel.</p>
+
+            @if($organization->hasSlackConnected())
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-700">
+                        Connected to <strong>{{ $organization->slack_team_name }}</strong>
+                    </p>
+                    <form method="POST" action="{{ route('integrations.slack.disconnect', $organization) }}">
+                        @csrf
+                        @method('DELETE')
+                        <x-button type="submit" variant="secondary">Disconnect</x-button>
+                    </form>
+                </div>
+            @else
+                <a href="{{ route('integrations.slack.redirect', $organization) }}">
+                    <x-button type="button">Connect Slack</x-button>
+                </a>
+            @endif
+        </x-card>
     @endif
 
     <x-card class="mb-6">

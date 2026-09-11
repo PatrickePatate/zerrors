@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'github' => [
+        'app_id' => env('GITHUB_APP_ID'),
+        'client_id' => env('GITHUB_APP_CLIENT_ID'),
+        'client_secret' => env('GITHUB_APP_CLIENT_SECRET'),
+        'private_key' => str_replace('\n', "\n", (string) env('GITHUB_APP_PRIVATE_KEY')),
+        'webhook_secret' => env('GITHUB_APP_WEBHOOK_SECRET'),
+        'slug' => env('GITHUB_APP_SLUG'),
+    ],
+
+    'slack_app' => [
+        'client_id' => env('SLACK_APP_CLIENT_ID'),
+        'client_secret' => env('SLACK_APP_CLIENT_SECRET'),
+        'signing_secret' => env('SLACK_APP_SIGNING_SECRET'),
+        'scopes' => env('SLACK_APP_SCOPES', 'chat:write,channels:read,groups:read'),
+    ],
+
 ];

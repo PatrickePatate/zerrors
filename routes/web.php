@@ -10,6 +10,8 @@ use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Fault\DashboardController;
 use App\Http\Controllers\Fault\IssueController;
 use App\Http\Controllers\Fault\ReleaseController;
+use App\Http\Controllers\Integrations\GithubAppController;
+use App\Http\Controllers\Integrations\SlackAppController;
 use App\Http\Controllers\Organization\AuditLogController;
 use App\Http\Controllers\Organization\InviteController;
 use App\Http\Controllers\Organization\MemberController;
@@ -50,6 +52,9 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/invites/{token}', [InviteController::class, 'show'])->name('invites.accept');
 
+Route::get('/integrations/github/callback', [GithubAppController::class, 'callback'])->name('integrations.github.callback');
+Route::get('/integrations/slack/callback', [SlackAppController::class, 'callback'])->name('integrations.slack.callback');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [SwitchController::class, 'index'])->name('dashboard');
     Route::get('/organizations', [SwitchController::class, 'list'])->name('organizations.index');
@@ -60,7 +65,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects', [DashboardController::class, 'store'])->name('organizations.projects.store');
         Route::get('/projects/{project:slug}', [DashboardController::class, 'show'])->name('organizations.projects.show');
         Route::post('/projects/{project:slug}/rotate-key', [DashboardController::class, 'rotateKey'])->name('organizations.projects.rotateKey');
-        Route::post('/projects/{project:slug}/github-webhook-secret', [DashboardController::class, 'generateGithubWebhookSecret'])->name('organizations.projects.githubWebhookSecret.generate');
         Route::patch('/projects/{project:slug}/settings', [DashboardController::class, 'updateSettings'])->name('organizations.projects.settings.update');
         Route::patch('/projects/{project:slug}/forwarding', [DashboardController::class, 'updateForwarding'])->name('organizations.projects.forwarding.update');
         Route::post('/projects/{project:slug}/transfer', [DashboardController::class, 'transfer'])->name('organizations.projects.transfer');
@@ -90,5 +94,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/leave', [SettingsController::class, 'leave'])->name('organizations.leave');
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])->name('organizations.audit.index');
+
+        Route::get('/settings/integrations/github/redirect', [GithubAppController::class, 'redirect'])->name('integrations.github.redirect');
+        Route::delete('/settings/integrations/github', [GithubAppController::class, 'disconnect'])->name('integrations.github.disconnect');
+        Route::get('/settings/integrations/slack/redirect', [SlackAppController::class, 'redirect'])->name('integrations.slack.redirect');
+        Route::delete('/settings/integrations/slack', [SlackAppController::class, 'disconnect'])->name('integrations.slack.disconnect');
     });
 });

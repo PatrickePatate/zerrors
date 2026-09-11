@@ -40,7 +40,7 @@ class NotificationChannel extends Model
     public function label(): string
     {
         return match ($this->type) {
-            NotificationChannelType::Slack => parse_url($this->config['webhook_url'] ?? '', PHP_URL_HOST) ?: 'Slack webhook',
+            NotificationChannelType::Slack => '#'.($this->config['channel_name'] ?? '?'),
             NotificationChannelType::Telegram => 'Chat '.($this->config['chat_id'] ?? '?'),
             NotificationChannelType::Email => $this->config['email'] ?? '',
         };

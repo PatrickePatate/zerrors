@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\NotificationChannelType;
 use App\Models\FaultProject;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class NotificationChannelFactory extends Factory
 {
@@ -14,17 +15,17 @@ class NotificationChannelFactory extends Factory
             'fault_project_id' => FaultProject::factory(),
             'type' => NotificationChannelType::Slack,
             'name' => 'Slack',
-            'config' => ['webhook_url' => 'https://hooks.slack.com/services/'.$this->faker->uuid()],
+            'config' => ['channel_id' => 'C'.Str::upper(Str::random(8)), 'channel_name' => 'alerts'],
             'enabled' => true,
         ];
     }
 
-    public function slack(string $webhookUrl): static
+    public function slack(string $channelId, string $channelName = 'alerts'): static
     {
         return $this->state([
             'type' => NotificationChannelType::Slack,
             'name' => 'Slack',
-            'config' => ['webhook_url' => $webhookUrl],
+            'config' => ['channel_id' => $channelId, 'channel_name' => $channelName],
         ]);
     }
 

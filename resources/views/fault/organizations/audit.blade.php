@@ -5,30 +5,26 @@
 @section('content')
     <h1 class="mb-6 text-xl font-semibold text-gray-900">{{ $organization->name }} &middot; Audit log</h1>
 
-    <x-card :padding="false">
-        <table class="w-full text-left text-sm">
-            <thead>
-                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                    <th class="px-5 py-3 font-medium">Action</th>
-                    <th class="px-5 py-3 font-medium">Subject</th>
-                    <th class="px-5 py-3 font-medium">By</th>
-                    <th class="px-5 py-3 font-medium">When</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse($logs as $log)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-5 py-3"><x-badge>{{ $log->action }}</x-badge></td>
-                        <td class="px-5 py-3 text-gray-700">{{ $log->subject_label ?? '—' }}</td>
-                        <td class="px-5 py-3 text-gray-500">{{ $log->user?->name ?? 'System' }}</td>
-                        <td class="px-5 py-3 text-gray-400">{{ $log->created_at->diffForHumans() }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="4" class="px-5 py-6 text-sm text-gray-400">No activity recorded yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </x-card>
+    <x-table>
+        <x-table.head>
+            <x-table.column>Action</x-table.column>
+            <x-table.column>Subject</x-table.column>
+            <x-table.column>By</x-table.column>
+            <x-table.column>When</x-table.column>
+        </x-table.head>
+        <x-table.body>
+            @forelse($logs as $log)
+                <x-table.row>
+                    <x-table.cell><x-badge>{{ $log->action }}</x-badge></x-table.cell>
+                    <x-table.cell class="text-gray-700">{{ $log->subject_label ?? '—' }}</x-table.cell>
+                    <x-table.cell class="text-gray-500">{{ $log->user?->name ?? 'System' }}</x-table.cell>
+                    <x-table.cell class="text-gray-400">{{ $log->created_at->diffForHumans() }}</x-table.cell>
+                </x-table.row>
+            @empty
+                <x-table.empty :colspan="4">No activity recorded yet.</x-table.empty>
+            @endforelse
+        </x-table.body>
+    </x-table>
 
     <div class="mt-4">{{ $logs->links() }}</div>
 @endsection

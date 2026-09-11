@@ -97,41 +97,37 @@
 
             <div>
                 <h2 class="mb-3 text-sm font-medium text-gray-700">All events</h2>
-                <div class="overflow-hidden overflow-x-auto rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left font-medium text-gray-500">Occurred</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-500">Message</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-500">Environment</th>
-                                <th class="px-4 py-2 text-left font-medium text-gray-500">Release</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 bg-white">
-                            @foreach($events as $event)
-                                @php($isCurrent = $currentEvent && $event->is($currentEvent))
-                                <tr @class(['bg-indigo-50/60' => $isCurrent, 'hover:bg-gray-50' => ! $isCurrent])>
-                                    <td class="px-4 py-2 whitespace-nowrap">
-                                        <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block text-gray-700 hover:text-gray-900">
-                                            @if($isCurrent)
-                                                <span class="font-medium text-indigo-700">{{ $event->occurred_at }}</span>
-                                            @else
-                                                {{ $event->occurred_at }}
-                                            @endif
-                                        </a>
-                                    </td>
-                                    <td class="max-w-xs px-4 py-2">
-                                        <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block truncate text-gray-700 hover:text-gray-900">
-                                            {{ $event->message ?: '—' }}
-                                        </a>
-                                    </td>
-                                    <td class="px-4 py-2 whitespace-nowrap text-gray-500">{{ $event->environment ?: '—' }}</td>
-                                    <td class="px-4 py-2 whitespace-nowrap text-gray-500">{{ $event->release ?: '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                <x-table>
+                    <x-table.head>
+                        <x-table.column>Occurred</x-table.column>
+                        <x-table.column>Message</x-table.column>
+                        <x-table.column>Environment</x-table.column>
+                        <x-table.column>Release</x-table.column>
+                    </x-table.head>
+                    <x-table.body>
+                        @foreach($events as $event)
+                            @php($isCurrent = $currentEvent && $event->is($currentEvent))
+                            <x-table.row @class(['bg-indigo-50/60' => $isCurrent])>
+                                <x-table.cell class="whitespace-nowrap">
+                                    <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block text-gray-700 hover:text-gray-900">
+                                        @if($isCurrent)
+                                            <span class="font-medium text-indigo-700">{{ $event->occurred_at }}</span>
+                                        @else
+                                            {{ $event->occurred_at }}
+                                        @endif
+                                    </a>
+                                </x-table.cell>
+                                <x-table.cell class="max-w-xs">
+                                    <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block truncate text-gray-700 hover:text-gray-900">
+                                        {{ $event->message ?: '—' }}
+                                    </a>
+                                </x-table.cell>
+                                <x-table.cell class="whitespace-nowrap text-gray-500">{{ $event->environment ?: '—' }}</x-table.cell>
+                                <x-table.cell class="whitespace-nowrap text-gray-500">{{ $event->release ?: '—' }}</x-table.cell>
+                            </x-table.row>
+                        @endforeach
+                    </x-table.body>
+                </x-table>
 
                 <div class="mt-4">{{ $events->links() }}</div>
             </div>

@@ -140,16 +140,16 @@ class IssueActionsLivewireTest extends TestCase
     public function test_it_creates_a_linked_github_issue(): void
     {
         Http::fake([
-            'api.github.com/*' => Http::response(['html_url' => 'https://github.com/acme/api/issues/7', 'number' => 7], 201),
+            'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'ghs_installation_token'], 201),
+            'api.github.com/repos/*' => Http::response(['html_url' => 'https://github.com/acme/api/issues/7', 'number' => 7], 201),
         ]);
 
-        $organization = Organization::factory()->create();
+        $organization = Organization::factory()->withGithubApp()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
         $project = FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
         ]);
         $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
 
@@ -164,7 +164,8 @@ class IssueActionsLivewireTest extends TestCase
     public function test_it_fetches_the_commit_linked_to_the_issues_release(): void
     {
         Http::fake([
-            'api.github.com/*' => Http::response([
+            'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'ghs_installation_token'], 201),
+            'api.github.com/repos/*' => Http::response([
                 'html_url' => 'https://github.com/acme/api/commit/abcdef1234567890',
                 'commit' => ['message' => 'Fix the null pointer', 'author' => ['name' => 'Ada Lovelace', 'date' => '2026-01-01T12:00:00Z']],
                 'files' => [['filename' => 'app/Foo.php', 'status' => 'modified', 'additions' => 3, 'deletions' => 1]],
@@ -172,13 +173,12 @@ class IssueActionsLivewireTest extends TestCase
             ], 200),
         ]);
 
-        $organization = Organization::factory()->create();
+        $organization = Organization::factory()->withGithubApp()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
         $project = FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
         ]);
         $release = Release::factory()->create([
             'fault_project_id' => $project->id,

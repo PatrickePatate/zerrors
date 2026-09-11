@@ -85,7 +85,7 @@
 
                 @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
                     <x-modal
-                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('github_token') || $errors->has('production_branch') || $errors->has('github_webhook_secret') || $errors->has('forward_dsn')"
+                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('production_branch') || $errors->has('forward_dsn')"
                         max-width="lg"
                     >
                         <x-slot:trigger>
@@ -120,21 +120,18 @@
 
                                     <div>
                                         <x-form.text-input label="GitHub repo (owner/repo)" name="github_repo" value="{{ $project->github_repo }}" placeholder="acme/api" :error="$errors->first('github_repo')" />
-                                        <p class="mt-1 text-xs text-gray-400">Lets you create a linked GitHub issue straight from an issue page.</p>
-                                    </div>
-                                    <div>
-                                        <x-form.text-input label="GitHub token" name="github_token" type="password" placeholder="{{ $project->github_token ? '••••••••' : 'ghp_…' }}" :error="$errors->first('github_token')" />
-                                        <p class="mt-1 text-xs text-gray-400">Personal access token with "repo" scope. Leave blank to keep the current one.</p>
+                                        <p class="mt-1 text-xs text-gray-400">
+                                            @if($organization->hasGithubConnected())
+                                                Lets you create a linked GitHub issue and record releases from pushes, using the organization's connected GitHub App.
+                                            @else
+                                                Connect GitHub on the <a href="{{ route('organizations.settings.edit', $organization) }}" class="underline">organization settings</a> page first.
+                                            @endif
+                                        </p>
                                     </div>
 
                                     <div>
                                         <x-form.text-input label="Production branch" name="production_branch" value="{{ $project->production_branch }}" placeholder="main" :error="$errors->first('production_branch')" />
-                                        <p class="mt-1 text-xs text-gray-400">The branch a release is recorded for when the GitHub webhook below receives a push.</p>
-                                    </div>
-
-                                    <div>
-                                        <x-form.text-input label="GitHub webhook secret" name="github_webhook_secret" type="password" placeholder="{{ $project->github_webhook_secret ? '••••••••' : 'Generate one below' }}" :error="$errors->first('github_webhook_secret')" />
-                                        <p class="mt-1 text-xs text-gray-400">Must match the secret configured on the GitHub webhook. Leave blank to keep the current one.</p>
+                                        <p class="mt-1 text-xs text-gray-400">The branch a release is recorded for when GitHub pushes to it.</p>
                                     </div>
 
                                     <div class="flex justify-end gap-2">
@@ -142,35 +139,6 @@
                                         <x-button type="submit">Save</x-button>
                                     </div>
                                 </form>
-
-                                <div class="mt-4 border-t border-gray-100 pt-4">
-                                    <h3 class="text-xs font-medium tracking-wide text-gray-600 uppercase">GitHub webhook</h3>
-                                    <p class="mt-1 text-xs text-gray-400">
-                                        Add this as a "push" webhook on the repository (Settings &rarr; Webhooks) so a release is
-                                        created automatically whenever a PR is merged into the production branch above.
-                                    </p>
-                                    <div class="mt-2">
-                                        <x-credential :value="$project->githubWebhookUrl()" />
-                                    </div>
-
-                                    @if(session('githubWebhookSecret'))
-                                        <p class="mt-2 text-xs text-gray-500">Secret (shown once, copy it now):</p>
-                                        <div class="mt-1">
-                                            <x-credential :value="session('githubWebhookSecret')" />
-                                        </div>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('organizations.projects.githubWebhookSecret.generate', [$organization, $project]) }}"
-                                          @if($project->github_webhook_secret)
-                                              x-data @submit="if (! confirm('Generate a new webhook secret? Update it on the GitHub webhook too, or pushes will stop creating releases.')) $event.preventDefault()"
-                                          @endif
-                                          class="mt-2">
-                                        @csrf
-                                        <x-button type="submit" variant="secondary" class="text-xs">
-                                            {{ $project->github_webhook_secret ? 'Regenerate secret' : 'Generate secret' }}
-                                        </x-button>
-                                    </form>
-                                </div>
                             </div>
 
                             <div x-show="tab === 'notifications'" x-cloak>
