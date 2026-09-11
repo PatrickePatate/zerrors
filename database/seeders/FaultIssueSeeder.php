@@ -50,6 +50,36 @@ class FaultIssueSeeder extends Seeder
     protected const STATUSES = ['unresolved', 'unresolved', 'unresolved', 'resolved', 'ignored'];
 
     /**
+     * Runtime name/version pairs per platform, used to fill contexts.runtime
+     * with something plausible for that platform.
+     *
+     * @var array<string, array<int, array{name: string, version: string}>>
+     */
+    protected const RUNTIMES = [
+        'php' => [['name' => 'php', 'version' => '8.4.1'], ['name' => 'php', 'version' => '8.3.14']],
+        'laravel' => [['name' => 'php', 'version' => '8.4.1'], ['name' => 'php', 'version' => '8.3.14']],
+        'symfony' => [['name' => 'php', 'version' => '8.4.1'], ['name' => 'php', 'version' => '8.3.14']],
+        'wordpress' => [['name' => 'php', 'version' => '8.2.20']],
+        'nodejs' => [['name' => 'node', 'version' => '20.11.1'], ['name' => 'node', 'version' => '22.3.0']],
+        'other' => [['name' => 'php', 'version' => '8.4.1']],
+    ];
+
+    /**
+     * @var array<int, array{name: string, version: string, kernel_version?: string}>
+     */
+    protected const OPERATING_SYSTEMS = [
+        ['name' => 'Linux', 'version' => '5.15.0-185-generic', 'kernel_version' => 'Linux 5.15.0-185-generic #195-Ubuntu SMP'],
+        ['name' => 'Linux', 'version' => '6.8.0-45-generic', 'kernel_version' => 'Linux 6.8.0-45-generic #45-Ubuntu SMP'],
+        ['name' => 'Darwin', 'version' => '23.5.0'],
+    ];
+
+    protected const USER_AGENTS = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+    ];
+
+    /**
      * Canned markdown analyses so seeded issues that get an AI analysis at
      * least look like a real model wrote them.
      *
@@ -107,20 +137,93 @@ class FaultIssueSeeder extends Seeder
                     'ai_deep_analyzed_at' => $hasDeepAnalysis ? (clone $lastSeenAt)->addMinutes(random_int(61, 120)) : null,
                 ]);
 
-                collect(range(1, min(5, $timesSeen)))->each(fn ($i) => FaultEvent::create([
-                    'fault_project_id' => $project->id,
-                    'fault_issue_id' => $issue->id,
-                    'event_id' => (string) Str::uuid(),
-                    'level' => $issue->level,
-                    'message' => $sample['message'],
-                    'culprit' => $sample['culprit'],
-                    'environment' => 'production',
-                    'exception' => ['values' => $values = $this->buildExceptionPayload($sample)],
-                    'payload' => ['message' => $sample['message'], 'exception' => ['values' => $values]],
-                    'occurred_at' => (clone $firstSeenAt)->addMinutes($i * random_int(5, 240)),
-                ]));
+                collect(range(1, min(5, $timesSeen)))->each(function ($i) use ($project, $issue, $sample, $firstSeenAt) {
+                    $user = $this->buildUserPayload();
+
+                    FaultEvent::create([
+                        'fault_project_id' => $project->id,
+                        'fault_issue_id' => $issue->id,
+                        'event_id' => (string) Str::uuid(),
+                        'level' => $issue->level,
+                        'message' => $sample['message'],
+                        'culprit' => $sample['culprit'],
+                        'environment' => 'production',
+                        'server_name' => 'web-'.random_int(1, 4).'.prod.internal',
+                        'exception' => ['values' => $values = $this->buildExceptionPayload($sample)],
+                        'request' => $this->buildRequestPayload($sample),
+                        'contexts' => $this->buildContextsPayload($project),
+                        'extra' => $this->buildExtraPayload(),
+                        'payload' => ['message' => $sample['message'], 'exception' => ['values' => $values], 'user' => $user],
+                        'occurred_at' => (clone $firstSeenAt)->addMinutes($i * random_int(5, 240)),
+                    ]);
+                });
             });
         });
+    }
+
+    /**
+     * @return array{id: string, email: string, username: string, ip_address: string}
+     */
+    protected function buildUserPayload(): array
+    {
+        $id = random_int(1, 5000);
+
+        return [
+            'id' => (string) $id,
+            'email' => "user{$id}@example.com",
+            'username' => 'user'.$id,
+            'ip_address' => implode('.', [random_int(1, 255), random_int(0, 255), random_int(0, 255), random_int(1, 255)]),
+        ];
+    }
+
+    /**
+     * @param  array{type: string, message: string, culprit: string, file: string}  $sample
+     * @return array{method: string, url: string, query_string?: string, headers: array<string, string>}
+     */
+    protected function buildRequestPayload(array $sample): array
+    {
+        $method = Str::contains($sample['culprit'], ['store', 'create', 'charge', 'save']) ? 'POST' : 'GET';
+        $path = '/'.Str::slug(Str::before($sample['culprit'], '@') ?: Str::before($sample['culprit'], '::'));
+
+        return array_filter([
+            'method' => $method,
+            'url' => 'https://example.test'.$path,
+            'query_string' => $method === 'GET' ? 'page='.random_int(1, 5) : null,
+            'headers' => [
+                'User-Agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
+                'Accept' => 'application/json',
+                'Host' => 'example.test',
+            ],
+        ], fn ($value) => $value !== null);
+    }
+
+    /**
+     * @return array{os: array<string, string>, runtime: array<string, string>, trace: array{span_id: string, trace_id: string, status: string}}
+     */
+    protected function buildContextsPayload(FaultProject $project): array
+    {
+        $runtimes = self::RUNTIMES[$project->platform->value] ?? self::RUNTIMES['other'];
+
+        return [
+            'os' => self::OPERATING_SYSTEMS[array_rand(self::OPERATING_SYSTEMS)],
+            'runtime' => $runtimes[array_rand($runtimes)],
+            'trace' => [
+                'span_id' => Str::random(16),
+                'trace_id' => Str::random(32),
+                'status' => random_int(1, 10) === 1 ? 'internal_error' : 'ok',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, string|int>
+     */
+    protected function buildExtraPayload(): array
+    {
+        return [
+            'order_id' => 'ord_'.Str::random(8),
+            'memory_usage_mb' => random_int(32, 256),
+        ];
     }
 
     /**

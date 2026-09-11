@@ -1,5 +1,6 @@
 @props([
     'options' => [],
+    'images' => [],
     'selected' => null,
     'label' => null,
     'error' => null,
@@ -11,6 +12,7 @@
     $items = collect($options)->map(fn ($optionLabel, $value) => [
         'title' => $optionLabel,
         'value' => (string) $value,
+        'image' => $images[$value] ?? null,
         'disabled' => false,
     ])->values()->all();
 
@@ -35,7 +37,12 @@
                 @keydown.enter.prevent="if (activeItem) select(activeItem)"
                 :class="open ? 'ring-2 ring-offset-2 ring-gray-400' : ''"
                 class="relative flex h-10 min-h-[38px] w-full items-center justify-between rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left text-sm focus:outline-none">
-            <span class="truncate" x-text="selectedItem ? selectedItem.title : @js($placeholder)"></span>
+            <span class="flex min-w-0 items-center gap-2">
+                <template x-if="selectedItem?.image">
+                    <img :src="selectedItem.image" alt="" class="h-5 w-5 shrink-0 rounded-full object-cover">
+                </template>
+                <span class="truncate" x-text="selectedItem ? selectedItem.title : @js($placeholder)"></span>
+            </span>
             <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <x-lucide-chevron-down class="h-4 w-4 text-gray-400" />
             </span>
@@ -56,6 +63,9 @@
                     :class="isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'"
                     class="relative flex cursor-default items-center py-2 pr-3 pl-8 select-none data-disabled:pointer-events-none data-disabled:opacity-50">
                     <x-lucide-check x-show="selectedValue === item.value" class="absolute left-2 h-4 w-4 text-gray-500" />
+                    <template x-if="item.image">
+                        <img :src="item.image" alt="" class="mr-2 h-5 w-5 shrink-0 rounded-full object-cover">
+                    </template>
                     <span class="block truncate font-medium" x-text="item.title"></span>
                 </li>
             </template>
