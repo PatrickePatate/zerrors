@@ -15,7 +15,7 @@ class FaultEvent extends Model
     protected $fillable = [
         'fault_project_id', 'fault_issue_id', 'event_id', 'level', 'message', 'culprit',
         'environment', 'release', 'transaction', 'server_name', 'exception', 'sdk',
-        'tags', 'extra', 'contexts', 'request', 'breadcrumbs', 'payload', 'occurred_at',
+        'tags', 'extra', 'contexts', 'request', 'breadcrumbs', 'log_context', 'payload', 'occurred_at',
     ];
 
     protected $casts = [
@@ -26,6 +26,7 @@ class FaultEvent extends Model
         'contexts' => 'array',
         'request' => 'array',
         'breadcrumbs' => 'array',
+        'log_context' => 'array',
         'payload' => 'array',
         'occurred_at' => 'datetime',
     ];
