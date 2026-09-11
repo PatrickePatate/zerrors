@@ -58,4 +58,8 @@
             @endforelse
         </x-table.body>
     </x-table>
+
+    <div class="mt-4">
+        <x-pagination :paginator="$projects" :livewire="false" />
+    </div>
 @endsection

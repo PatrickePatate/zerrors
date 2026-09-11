@@ -4,6 +4,7 @@
 
 @php
     $levelColors = ['error' => 'red', 'warning' => 'amber', 'fatal' => 'red', 'info' => 'blue'];
+    $statusColors = ['unresolved' => 'red', 'resolved' => 'green', 'ignored' => 'gray'];
 @endphp
 
 @section('content')
@@ -14,11 +15,14 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
             <x-card>
-                <h1 class="text-lg font-semibold text-gray-900">{{ $issue->title }}</h1>
+                <x-badge :color="$statusColors[$issue->status] ?? 'gray'" class="-ms-0.5 mb-1.5">{{ ucfirst($issue->status) }}</x-badge>
+                <h1 class="flex flex-wrap items-center gap-2 text-lg font-semibold text-gray-900">
+                    {{ $issue->title }}
+                </h1>
                 <p class="mt-1 text-sm text-gray-500">{{ $issue->culprit }}</p>
 
                 <div class="mt-3 flex flex-wrap items-center gap-2">
-                    <x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ $issue->level }}</x-badge>
+                    <x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ ucfirst($issue->level) }}</x-badge>
                     <span class="text-sm text-gray-400">
                         {{ $issue->times_seen }} events &middot; first seen {{ $issue->first_seen_at?->diffForHumans() }} &middot; last seen {{ $issue->last_seen_at?->diffForHumans() }}
                         @if($issue->first_seen_release) &middot; first seen in <code class="text-gray-500">{{ $issue->first_seen_release }}</code> @endif
@@ -78,7 +82,17 @@
 
             @if($currentEvent && $currentEvent->exception)
                 <x-card>
-                    <h2 class="mb-3 text-sm font-medium text-gray-700">Stack trace</h2>
+                    <div class="mb-3 flex items-center justify-between">
+                        <h2 class="text-sm font-medium text-gray-700">Stack trace</h2>
+                        <button type="button"
+                                x-data="{ copied: false }"
+                                @click="$clipboard(@js(\App\Support\Fault\StacktraceMarkdownFormatter::format($issue, $currentEvent))); copied = true; clearTimeout($el._copiedTimeout); $el._copiedTimeout = setTimeout(() => copied = false, 1500)"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50 hover:text-gray-900">
+                            <x-lucide-copy-check x-cloak x-show="copied" class="h-3.5 w-3.5 text-emerald-600" />
+                            <x-lucide-copy x-show="!copied" class="h-3.5 w-3.5" />
+                            <span x-text="copied ? 'Copied!' : 'Copy as Markdown'"></span>
+                        </button>
+                    </div>
                     <x-stacktrace :exception="$currentEvent->exception" />
                 </x-card>
             @elseif($currentEvent && $currentEvent->log_context)

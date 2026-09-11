@@ -131,5 +131,7 @@
         </x-table.body>
     </x-table>
 
-    <div class="mt-4">{{ $issues->links() }}</div>
+    <div class="mt-4">
+        <x-pagination :paginator="$issues" />
+    </div>
 </div>

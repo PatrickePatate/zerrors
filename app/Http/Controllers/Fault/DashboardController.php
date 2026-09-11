@@ -23,7 +23,7 @@ class DashboardController extends Controller
         $projects = $organization->projects()->withCount([
             'issues',
             'issues as unresolved_issues_count' => fn ($q) => $q->where('status', 'unresolved'),
-        ])->latest()->get();
+        ])->latest()->paginate(25);
 
         return view('fault.projects.index', ['organization' => $organization, 'projects' => $projects]);
     }

@@ -1,10 +1,4 @@
-@php($statusColors = ['unresolved' => 'red', 'resolved' => 'green', 'ignored' => 'gray'])
-
 <div>
-    <div class="mb-3">
-        <x-badge :color="$statusColors[$issue->status] ?? 'gray'">{{ $issue->status }}</x-badge>
-    </div>
-
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-2">
             <x-button type="button" wire:click="updateStatus('resolved')" wire:loading.attr="disabled">
@@ -39,6 +33,7 @@
             <div class="w-40">
                 <x-form.select id="assignedToUserId" wire:model.live="assignedToUserId"
                                 :options="['' => 'Unassigned'] + $members->pluck('name', 'id')->all()"
+                                :images="$members->mapWithKeys(fn ($member) => [$member->id => $member->avatarUrl()])->all()"
                                 :selected="$assignedToUserId"
                                 :error="$errors->first('assignedToUserId')" />
             </div>
