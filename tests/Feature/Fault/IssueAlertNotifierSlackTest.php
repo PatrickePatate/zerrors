@@ -28,7 +28,7 @@ class IssueAlertNotifierSlackTest extends TestCase
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
         $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
 
-        app(IssueAlertNotifier::class)->issueCreated($issue);
+        app(IssueAlertNotifier::class)->notify($issue, wasNew: true, isRegression: false);
 
         Http::assertSent(fn ($request) => $request->url() === 'https://slack.com/api/chat.postMessage'
             && $request->hasHeader('Authorization', 'Bearer '.$organization->slack_bot_token)
@@ -45,7 +45,7 @@ class IssueAlertNotifierSlackTest extends TestCase
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
         $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
 
-        app(IssueAlertNotifier::class)->issueCreated($issue);
+        app(IssueAlertNotifier::class)->notify($issue, wasNew: true, isRegression: false);
 
         Http::assertNothingSent();
     }

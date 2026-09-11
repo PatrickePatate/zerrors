@@ -133,6 +133,22 @@ class ProjectAlertChannelsTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_a_channel_with_both_new_issue_and_every_event_rules_only_fires_once_on_the_first_occurrence(): void
+    {
+        Http::fake();
+
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->slack('C123', 'alerts')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::EveryEvent]);
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
+
+        Http::assertSentCount(1);
+    }
+
     public function test_a_new_project_default_channel_does_not_double_email_on_the_first_occurrence(): void
     {
         Notification::fake();
