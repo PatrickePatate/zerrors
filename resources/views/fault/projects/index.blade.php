@@ -66,9 +66,11 @@
                     @scroll.window.capture="menuOpen = false"
                     @resize.window="menuOpen = false"
                 >
-                    <x-table.cell class="flex items-center gap-2">
-                        <x-tooltip :message="$project->platform->label()">{{ $project->platform->icon(size: '6') }}</x-tooltip>
-                        <a href="{{ route('organizations.projects.show', [$organization, $project]) }}" class="font-semibold text-gray-900 hover:underline">{{ $project->name }}</a>
+                    <x-table.cell>
+                        <div class="flex items-center gap-2">
+                            <x-tooltip :message="$project->platform->label()">{{ $project->platform->icon(size: '6') }}</x-tooltip>
+                            <a href="{{ route('organizations.projects.show', [$organization, $project]) }}" class="font-semibold text-gray-900 hover:underline">{{ $project->name }}</a>
+                        </div>
                     </x-table.cell>
                     <x-table.cell class="text-gray-600">{{ $project->issues_count }}</x-table.cell>
                     <x-table.cell>

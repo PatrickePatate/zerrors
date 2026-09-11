@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/organizations', [SwitchController::class, 'store'])->name('organizations.store');
 
     Route::prefix('/o/{organization:slug}')->middleware('org.member')->group(function () {
+        Route::get('/overview', [DashboardController::class, 'overview'])->name('organizations.overview');
         Route::get('/projects', [DashboardController::class, 'index'])->name('organizations.projects.index');
         Route::post('/projects', [DashboardController::class, 'store'])->name('organizations.projects.store');
         Route::get('/projects/{project:slug}', [DashboardController::class, 'show'])->name('organizations.projects.show');
