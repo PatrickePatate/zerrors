@@ -110,15 +110,7 @@ class ProcessFaultEvent implements ShouldQueue
             'occurred_at' => $occurredAt,
         ]);
 
-        $notifier = app(IssueAlertNotifier::class);
-
-        if ($wasNew) {
-            $notifier->issueCreated($issue);
-        } elseif ($isRegression) {
-            $notifier->issueRegressed($issue);
-        }
-
-        $notifier->issueOccurrence($issue);
+        app(IssueAlertNotifier::class)->notify($issue, $wasNew, $isRegression);
     }
 
     protected function parseTimestamp(mixed $timestamp): Carbon

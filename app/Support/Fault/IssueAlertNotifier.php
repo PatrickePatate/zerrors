@@ -20,49 +20,43 @@ class IssueAlertNotifier
 {
     public function __construct(protected SlackAppClient $slack) {}
 
-    public function issueCreated(FaultIssue $issue): void
-    {
-        $this->dispatch($issue, NotificationRuleTrigger::NewIssue, 'New issue', new IssueCreatedNotification($issue));
-    }
-
-    public function issueRegressed(FaultIssue $issue): void
-    {
-        $this->dispatch($issue, NotificationRuleTrigger::Regression, 'Issue regressed', new IssueRegressedNotification($issue));
-    }
-
     /**
-     * Called for every processed event, including the one that created or
-     * regressed the issue, so "every event" and "occurrence threshold"
-     * channel rules see every occurrence. A channel matching both rules for
-     * the same occurrence is only notified once.
+     * Notify for a single processed event. A channel can match several
+     * trigger rules for the same event (e.g. "new issue" and "every event");
+     * it is only ever sent once, using the most specific matching label.
      */
-    public function issueOccurrence(FaultIssue $issue): void
+    public function notify(FaultIssue $issue, bool $wasNew, bool $isRegression): void
     {
+        $organization = $issue->project->organization;
+
+        if ($organization->alerts_enabled) {
+            if ($wasNew) {
+                Notification::send($organization->users, new IssueCreatedNotification($issue));
+            } elseif ($isRegression) {
+                Notification::send($organization->users, new IssueRegressedNotification($issue));
+            }
+        }
+
+        $triggers = [];
+
+        if ($wasNew) {
+            $triggers[] = [NotificationRuleTrigger::NewIssue, 'New issue'];
+        } elseif ($isRegression) {
+            $triggers[] = [NotificationRuleTrigger::Regression, 'Issue regressed'];
+        }
+
+        $triggers[] = [NotificationRuleTrigger::EveryEvent, 'New occurrence'];
+        $triggers[] = [NotificationRuleTrigger::OccurrenceThreshold, "Occurrence #{$issue->times_seen}"];
+
         $matched = [];
 
-        foreach ([
-            [NotificationRuleTrigger::EveryEvent, 'New occurrence'],
-            [NotificationRuleTrigger::OccurrenceThreshold, "Occurrence #{$issue->times_seen}"],
-        ] as [$trigger, $label]) {
+        foreach ($triggers as [$trigger, $label]) {
             foreach ($this->matchingChannels($issue, $trigger) as $channel) {
                 $matched[$channel->id] ??= [$channel, $label];
             }
         }
 
         foreach ($matched as [$channel, $label]) {
-            $this->send($channel, $issue, $label);
-        }
-    }
-
-    protected function dispatch(FaultIssue $issue, NotificationRuleTrigger $trigger, string $label, ?object $orgNotification = null): void
-    {
-        $organization = $issue->project->organization;
-
-        if ($organization->alerts_enabled && $orgNotification) {
-            Notification::send($organization->users, $orgNotification);
-        }
-
-        foreach ($this->matchingChannels($issue, $trigger) as $channel) {
             $this->send($channel, $issue, $label);
         }
     }
