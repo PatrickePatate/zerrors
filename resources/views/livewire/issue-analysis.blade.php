@@ -6,9 +6,6 @@
                     <x-lucide-sparkles class="h-4 w-4 text-indigo-500" />
                     AI analysis
                 </h2>
-                @if($issue->ai_analyzed_at)
-                    <p class="text-xs text-gray-400">Last analyzed {{ $issue->ai_analyzed_at->diffForHumans() }}</p>
-                @endif
             </div>
         </div>
 
@@ -30,6 +27,10 @@
                         </h3>
                         <x-lucide-chevron-down class="h-4 w-4 shrink-0 text-gray-400 transition-transform" x-bind:class="{ '-rotate-180': quickOpen }" />
                     </button>
+                    @if($issue->ai_analyzed_at)
+                        <p class="text-xs text-gray-400">Last analyzed {{ $issue->ai_analyzed_at->diffForHumans() }}</p>
+                    @endif
+
                     <div x-show="quickOpen" x-collapse class="prose prose-sm mt-3 max-h-[42rem] max-w-none overflow-y-auto prose-headings:text-sm prose-headings:font-medium prose-headings:text-gray-700">
                         {!! \Illuminate\Support\Str::markdown($issue->ai_analysis) !!}
                     </div>

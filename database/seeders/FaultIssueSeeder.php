@@ -50,6 +50,24 @@ class FaultIssueSeeder extends Seeder
     protected const STATUSES = ['unresolved', 'unresolved', 'unresolved', 'resolved', 'ignored'];
 
     /**
+     * Canned markdown analyses so seeded issues that get an AI analysis at
+     * least look like a real model wrote them.
+     *
+     * @var array<int, string>
+     */
+    protected const AI_ANALYSES = [
+        "## Likely cause\nThis is most likely triggered by unvalidated input reaching a code path that assumes a well-formed value. The stack trace points to the failure happening before any guard clause runs.\n\n## Suggested fix\n- Validate the input at the boundary (request/job payload) before it reaches this code.\n- Add a defensive check with a clear exception message so future occurrences are easier to diagnose.",
+        "## Likely cause\nThe error suggests a race condition or stale state: the code assumes a resource exists or is in a particular state, but that assumption doesn't hold under concurrent access or after an external change.\n\n## Suggested fix\n- Re-fetch or re-check the resource immediately before use.\n- Wrap the operation in a transaction or add optimistic locking if concurrent writes are expected.",
+        "## Likely cause\nAn external dependency (database, HTTP service, or queue) appears to be unavailable or slow, and the calling code doesn't handle that failure mode gracefully.\n\n## Suggested fix\n- Add retries with backoff for transient failures.\n- Surface a user-friendly error instead of letting the exception bubble up unhandled.",
+        "## Likely cause\nThis looks like a regression from a recent change to the surrounding logic — the failing line assumes a shape of data that no longer matches what's actually being passed in.\n\n## Suggested fix\n- Add a type check or default value at the start of the function.\n- Add a regression test covering this exact input shape.",
+    ];
+
+    protected const AI_DEEP_ANALYSES = [
+        "### Root cause walkthrough\nTracing back through the stack, the failure originates a few frames up from where the exception is thrown. The immediate cause is a missing guard, but the deeper issue is that the calling code never guarantees the invariant this function relies on.\n\n### Recommended fix\n1. Enforce the invariant at the source (e.g., form request validation or a value object).\n2. Keep the defensive check here too, but turn it into a typed exception with context.\n3. Add a test that reproduces this exact trace.\n\n### Related risk\nOther call sites of this same method may share the same assumption — worth a quick audit.",
+        "### Root cause walkthrough\nThis is a timing-dependent failure. Under normal load the resource is present by the time this code runs, but under load spikes or slow external calls the assumption breaks.\n\n### Recommended fix\n1. Make the dependent operation idempotent so retries are safe.\n2. Add explicit timeout and retry handling around the external call.\n3. Monitor the retry rate after deploying the fix to confirm it resolves the underlying contention.",
+    ];
+
+    /**
      * Seed a handful of realistic-looking issues (each with a few events) for
      * every existing project, so lists, filters, and the issue detail page
      * have something to render during local development.
@@ -66,6 +84,9 @@ class FaultIssueSeeder extends Seeder
                 $firstSeenAt = now()->subDays(random_int(1, 45))->subMinutes(random_int(0, 1440));
                 $lastSeenAt = (clone $firstSeenAt)->addMinutes(random_int(0, max(1, $timesSeen)));
 
+                $hasAnalysis = random_int(1, 100) <= 60;
+                $hasDeepAnalysis = $hasAnalysis && random_int(1, 100) <= 40;
+
                 $issue = FaultIssue::create([
                     'fault_project_id' => $project->id,
                     'fingerprint' => Str::random(20),
@@ -80,6 +101,10 @@ class FaultIssueSeeder extends Seeder
                     'assigned_to_user_id' => random_int(0, 2) === 0 && $members->isNotEmpty()
                         ? $members->random()->id
                         : null,
+                    'ai_analysis' => $hasAnalysis ? self::AI_ANALYSES[array_rand(self::AI_ANALYSES)] : null,
+                    'ai_analyzed_at' => $hasAnalysis ? (clone $lastSeenAt)->addMinutes(random_int(1, 60)) : null,
+                    'ai_deep_analysis' => $hasDeepAnalysis ? self::AI_DEEP_ANALYSES[array_rand(self::AI_DEEP_ANALYSES)] : null,
+                    'ai_deep_analyzed_at' => $hasDeepAnalysis ? (clone $lastSeenAt)->addMinutes(random_int(61, 120)) : null,
                 ]);
 
                 collect(range(1, min(5, $timesSeen)))->each(fn ($i) => FaultEvent::create([
