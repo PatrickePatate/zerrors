@@ -17,14 +17,12 @@ class FaultProject extends Model
 
     protected $fillable = [
         'organization_id', 'name', 'slug', 'platform', 'public_key', 'secret_key',
-        'retention_days', 'github_repo', 'github_token', 'production_branch', 'github_webhook_secret',
+        'retention_days', 'github_repo', 'production_branch',
         'forward_enabled', 'forward_dsn',
     ];
 
     protected $casts = [
         'platform' => FaultPlatform::class,
-        'github_token' => 'encrypted',
-        'github_webhook_secret' => 'encrypted',
         'forward_enabled' => 'boolean',
         'forward_dsn' => 'encrypted',
     ];
@@ -76,27 +74,11 @@ class FaultProject extends Model
 
     public function hasGithubConfigured(): bool
     {
-        return ! empty($this->github_repo) && ! empty($this->github_token);
-    }
-
-    public function hasGithubWebhookConfigured(): bool
-    {
-        return ! empty($this->github_repo) && ! empty($this->github_webhook_secret);
+        return ! empty($this->github_repo) && ! empty($this->organization?->github_installation_id);
     }
 
     public function isForwardingConfigured(): bool
     {
         return $this->forward_enabled && ! empty($this->forward_dsn);
-    }
-
-    /**
-     * The URL to register as a "push" webhook on the GitHub repository, so that
-     * a release is created automatically whenever the production branch moves.
-     */
-    public function githubWebhookUrl(?string $host = null): string
-    {
-        $host = $host ?? request()->getSchemeAndHttpHost();
-
-        return "{$host}/api/webhooks/github/{$this->public_key}";
     }
 }

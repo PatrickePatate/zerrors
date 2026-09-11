@@ -31,6 +31,15 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="GITHUB_APP_ID" value="123456"/>
+        <env name="GITHUB_APP_CLIENT_ID" value="Iv1.test"/>
+        <env name="GITHUB_APP_CLIENT_SECRET" value="test-client-secret"/>
+        <env name="GITHUB_APP_PRIVATE_KEY" value="-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCa+LBs8tXEPwFN\n5o5ZHsGcJSUgFS4/+PxM9Yj2AA0AEXUkU8KURmqu6PPhW4IDn4OHsU0WxTbGZv6V\nX44b1H4CLmgGtdIMBJeVbfk1x6uZSYryJXfEaVBfM4SLhldAJFHiIIJBQdGNhLMp\njJivMPxWIuNc/4KRDA5dn9WeKaHcrNOtR+RPkPADwMZYuY8MT1+Y/AXNqWYJycyF\n36QoZfQWjFWdPcEkzs/w86BdTk5GKF8vMjmLdVLELQk/uCnqe4yg2YjaGrtDgKa5\nOoeqAHm75ooZrl8SiNhsllwDgifOddiEc1pgQZv9x+0ruYwCCQR6585ol9neVAU6\nyhVnzfjPAgMBAAECggEAFX1m+bSy8APMqoDOPI2HS5/bBhfp0fU1B3cFBxf6tYe2\nNtNmqCkboiWrrBSEcvwrwSVVC1NNxTWDGDOoATP2RVcqFcQg3InGe3JEnLCTmy4X\nlnybnyD7hDggqTh34O0obbMUXPhDltxP+/MDOUgRteAgp0THVlXVqCYB+WzMhU06\nt9Af0HTFSD6tGDnpgGjH20jMULwzMV4FWmTxNy73zEHA9Z6lpeRCWfTvfBG1lo9M\nYjqgyeU7+UOhOs5tgf4Ocu3rVajZY/6J3qRWJkOqHuFjcNPGTglNxYABvzoPwZVN\nDUD0HIKG6t8f2nRYB5LLUWJwQVkgwgPEA3hkmQUMAQKBgQDTDRQIZJZtXsSb+ICx\nsB+u53nyuWo2yhxcKZfr+hJSFwuEpakdBCFHcFZ/CNBAj0cu4vVsRfK1oCQp1cSH\nW29aKDGdMW0ldPyJ1g2pL/mzbH4wpwrPVjp35Z8Y5B1VC9qbnkvZz25sk9zOdB1z\nTj5Ap31UxzIDtMDeyRkFK9TXcwKBgQC7+gm6jKb36WFsb1lER9cejPuM845l2jwf\ncoZ9stQcuV/+R9ErNghX4GiVIfraGeWc3974aWWaepS/AdlCjASF0uYqqBwI00Ad\n3kSfFFdwms095Ha9qAkWMdhpAN0woRyg4id2uMAoufk9i8XxJ8TTCDYlsVvcm+0f\nB207AumqNQKBgDzQE+mnMkEpgXV/0XVhzn9Ta6wpCRXofut/gKsaT5Uf1s3N/kDC\nI+S11facz4UKw/QaqaUdMqZrEoCLfCmUiy1rT4B/8XdNkkcVSrJphIXSyTmzqEW+\nDvLlU0aU1G7hD4ivwCNuxd67bHCAvMuwy/dNS6vWCe9PchO/1lnLG3VJAoGADKkU\niqn6fOwNEb6WJpEoHfik4KNuzdFbB0sxX7nxq1WY74lqvxxOh4ynvpOhT5s66cvy\nOozuuO7UoeC//0lq7JB9zBWyfa2svdZAjO5TzVO/yxFeJfvxULtetgPG4gWX5gYV\nXlunJZcRAGIvnMRu7z+4VeWSKFOgLtzTMIxLrJkCgYAHhy6pn/DQ6fJvCz2Uy0rE\nR8hq19x8QguhDV2EkEvqBHWLFsfbdtSxDeWeWQAYJXpKg+d7Zw4lf/cqzCIzpgvM\ndNskPZ19jJWiC/2ukqNOkdYdYH/inVo7aLelxtj1JsCRj0LzHdJAOemFeps8Q3zG\n2ZW8JaW4lAlYB6hfa3Db6A==\n-----END PRIVATE KEY-----\n"/>
+        <env name="GITHUB_APP_WEBHOOK_SECRET" value="test-webhook-secret"/>
+        <env name="GITHUB_APP_SLUG" value="zerrors-test-app"/>
+        <env name="SLACK_APP_CLIENT_ID" value="test-slack-client-id"/>
+        <env name="SLACK_APP_CLIENT_SECRET" value="test-slack-client-secret"/>
+        <env name="SLACK_APP_SIGNING_SECRET" value="test-slack-signing-secret"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>

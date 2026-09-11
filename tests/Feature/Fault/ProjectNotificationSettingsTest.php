@@ -9,6 +9,7 @@ use App\Models\NotificationChannel;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -18,7 +19,14 @@ class ProjectNotificationSettingsTest extends TestCase
 
     public function test_owner_can_add_a_slack_channel(): void
     {
-        $organization = Organization::factory()->create();
+        Http::fake([
+            'slack.com/api/conversations.list*' => Http::response([
+                'ok' => true,
+                'channels' => [['id' => 'C123', 'name' => 'alerts']],
+            ]),
+        ]);
+
+        $organization = Organization::factory()->withSlackApp()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
@@ -26,15 +34,33 @@ class ProjectNotificationSettingsTest extends TestCase
         Livewire::actingAs($owner)
             ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
             ->set('newChannelType', 'slack')
-            ->set('newWebhookUrl', 'https://hooks.slack.com/services/x')
+            ->set('newSlackChannelId', 'C123')
             ->call('addChannel')
             ->assertHasNoErrors();
 
         $channel = $project->notificationChannels()->sole();
-        $this->assertSame('https://hooks.slack.com/services/x', $channel->config['webhook_url']);
+        $this->assertSame('C123', $channel->config['channel_id']);
+        $this->assertSame('alerts', $channel->config['channel_name']);
     }
 
     public function test_adding_a_channel_validates_its_config(): void
+    {
+        $organization = Organization::factory()->withSlackApp()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+
+        Livewire::actingAs($owner)
+            ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
+            ->set('newChannelType', 'slack')
+            ->set('newSlackChannelId', '')
+            ->call('addChannel')
+            ->assertHasErrors(['newSlackChannelId']);
+
+        $this->assertSame(0, $project->notificationChannels()->count());
+    }
+
+    public function test_connect_slack_prompt_is_shown_when_slack_is_not_connected(): void
     {
         $organization = Organization::factory()->create();
         $owner = User::factory()->create();
@@ -44,11 +70,7 @@ class ProjectNotificationSettingsTest extends TestCase
         Livewire::actingAs($owner)
             ->test(NotificationChannelManager::class, ['organization' => $organization, 'project' => $project])
             ->set('newChannelType', 'slack')
-            ->set('newWebhookUrl', 'not-a-url')
-            ->call('addChannel')
-            ->assertHasErrors(['newWebhookUrl']);
-
-        $this->assertSame(0, $project->notificationChannels()->count());
+            ->assertSee('Connect Slack');
     }
 
     public function test_owner_can_toggle_a_rule_and_set_occurrence_thresholds(): void

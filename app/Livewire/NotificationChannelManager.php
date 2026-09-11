@@ -7,6 +7,7 @@ use App\Enums\NotificationRuleTrigger;
 use App\Models\FaultProject;
 use App\Models\NotificationChannel;
 use App\Models\Organization;
+use App\Support\Slack\SlackAppClient;
 use Livewire\Component;
 
 class NotificationChannelManager extends Component
@@ -17,7 +18,7 @@ class NotificationChannelManager extends Component
 
     public string $newChannelType = 'slack';
 
-    public string $newWebhookUrl = '';
+    public string $newSlackChannelId = '';
 
     public string $newBotToken = '';
 
@@ -46,11 +47,14 @@ class NotificationChannelManager extends Component
     {
         $data = match ($this->newChannelType) {
             'slack' => $this->validate([
-                'newWebhookUrl' => ['required', 'url', 'max:2048'],
+                'newSlackChannelId' => ['required', 'string'],
             ]) + [
                 'type' => NotificationChannelType::Slack,
                 'name' => 'Slack',
-                'config' => ['webhook_url' => $this->newWebhookUrl],
+                'config' => [
+                    'channel_id' => $this->newSlackChannelId,
+                    'channel_name' => collect($this->slackChannels())->firstWhere('id', $this->newSlackChannelId)['name'] ?? $this->newSlackChannelId,
+                ],
             ],
             'telegram' => $this->validate([
                 'newBotToken' => ['required', 'string', 'max:255'],
@@ -77,7 +81,19 @@ class NotificationChannelManager extends Component
             'enabled' => true,
         ]);
 
-        $this->reset(['newWebhookUrl', 'newBotToken', 'newChatId', 'newEmail']);
+        $this->reset(['newSlackChannelId', 'newBotToken', 'newChatId', 'newEmail']);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function slackChannels(): array
+    {
+        if (empty($this->organization->slack_bot_token)) {
+            return [];
+        }
+
+        return app(SlackAppClient::class)->listChannels($this->organization->slack_bot_token);
     }
 
     public function deleteChannel(int $channelId): void
@@ -135,6 +151,7 @@ class NotificationChannelManager extends Component
                 NotificationRuleTrigger::Regression,
                 NotificationRuleTrigger::EveryEvent,
             ],
+            'slackChannels' => $this->newChannelType === 'slack' ? $this->slackChannels() : [],
         ]);
     }
 }

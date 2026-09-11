@@ -61,14 +61,12 @@ class ProjectPlatformTest extends TestCase
             ->patch(route('organizations.projects.settings.update', [$organization, $project]), [
                 'platform' => 'php',
                 'github_repo' => 'acme/api',
-                'github_token' => 'ghp_secret',
             ])
             ->assertRedirect();
 
         $project->refresh();
         $this->assertSame(FaultPlatform::Php, $project->platform);
         $this->assertSame('acme/api', $project->github_repo);
-        $this->assertSame('ghp_secret', $project->github_token);
     }
 
     public function test_member_cannot_update_project_settings(): void

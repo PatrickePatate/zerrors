@@ -34,16 +34,16 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
 
-        Http::assertSent(fn ($request) => $request->url() === 'https://hooks.slack.com/services/x'
-            && str_contains($request['text'], 'New issue'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://slack.com/api/chat.postMessage'
+            && $request['channel'] === 'C123' && str_contains($request['text'], 'New issue'));
     }
 
     public function test_a_new_issue_posts_to_a_telegram_channel_with_a_new_issue_rule(): void
@@ -84,10 +84,10 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create(['enabled' => false]);
+            ->slack('C123', 'alerts')->create(['enabled' => false]);
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
@@ -99,10 +99,10 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue, 'enabled' => false]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
@@ -114,10 +114,10 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::EveryEvent]);
 
         $fingerprint = ['same-issue'];
@@ -159,10 +159,10 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create([
             'trigger' => NotificationRuleTrigger::OccurrenceThreshold,
             'thresholds' => [1, 3],
@@ -184,10 +184,10 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::Regression]);
 
         $fingerprint = ['same-issue'];
@@ -207,7 +207,7 @@ class ProjectAlertChannelsTest extends TestCase
     {
         Http::fake();
 
-        $organization = Organization::factory()->create(['alerts_enabled' => false]);
+        $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
         FaultIssue::factory()->create([
             'fault_project_id' => $project->id,
@@ -215,7 +215,7 @@ class ProjectAlertChannelsTest extends TestCase
             'fingerprint' => sha1('same-issue'),
         ]);
         $channel = NotificationChannel::factory()->for($project, 'project')
-            ->slack('https://hooks.slack.com/services/x')->create();
+            ->slack('C123', 'alerts')->create();
         $channel->rules()->create(['trigger' => NotificationRuleTrigger::Regression]);
 
         ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), [
@@ -223,6 +223,7 @@ class ProjectAlertChannelsTest extends TestCase
             'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'again']]],
         ]);
 
-        Http::assertSent(fn ($request) => str_contains($request['text'], 'Issue regressed'));
+        Http::assertSent(fn ($request) => $request->url() === 'https://slack.com/api/chat.postMessage'
+            && str_contains($request['text'], 'Issue regressed'));
     }
 }

@@ -53,9 +53,16 @@
 
         <div class="mt-3 space-y-3">
             @if($newChannelType === 'slack')
-                <x-form.text-input label="Slack webhook URL" wire:model="newWebhookUrl"
-                                    name="newWebhookUrl" placeholder="https://hooks.slack.com/services/…"
-                                    :error="$errors->first('newWebhookUrl')" />
+                @if($organization->slack_bot_token)
+                    <x-form.select label="Slack channel" wire:model="newSlackChannelId" id="newSlackChannelId"
+                                    :options="collect($slackChannels)->mapWithKeys(fn ($channel) => [$channel['id'] => '#'.$channel['name']])"
+                                    :selected="$newSlackChannelId" :error="$errors->first('newSlackChannelId')" />
+                @else
+                    <p class="text-sm text-gray-500">
+                        Connect Slack to this organization before adding a Slack channel.
+                        <a href="{{ route('integrations.slack.redirect', $organization) }}" class="font-medium text-gray-900 underline">Connect Slack</a>
+                    </p>
+                @endif
             @elseif($newChannelType === 'telegram')
                 <div class="grid grid-cols-2 gap-3">
                     <x-form.text-input label="Bot token" wire:model="newBotToken" name="newBotToken"

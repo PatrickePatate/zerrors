@@ -11,27 +11,26 @@ class GithubWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function pushPayload(string $ref, ?array $headCommit): array
+    private function pushPayload(string $ref, ?array $headCommit, string $repoFullName = 'acme/api'): array
     {
         return [
             'ref' => $ref,
             'head_commit' => $headCommit,
+            'repository' => ['full_name' => $repoFullName],
         ];
     }
 
-    private function signature(array $payload, string $secret): string
+    private function signature(array $payload): string
     {
-        return 'sha256='.hash_hmac('sha256', json_encode($payload), $secret);
+        return 'sha256='.hash_hmac('sha256', json_encode($payload), config('services.github.webhook_secret'));
     }
 
     public function test_a_push_to_the_production_branch_creates_a_release(): void
     {
-        $organization = Organization::factory()->create();
+        $organization = Organization::factory()->withGithubApp()->create();
         $project = FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
-            'github_webhook_secret' => 'whsec_test',
             'production_branch' => 'main',
         ]);
 
@@ -44,11 +43,11 @@ class GithubWebhookTest extends TestCase
         ]);
 
         $response = $this->postJson(
-            "/api/webhooks/github/{$project->public_key}",
+            '/api/webhooks/github',
             $payload,
             [
                 'X-GitHub-Event' => 'push',
-                'X-Hub-Signature-256' => $this->signature($payload, 'whsec_test'),
+                'X-Hub-Signature-256' => $this->signature($payload),
             ]
         );
 
@@ -65,23 +64,21 @@ class GithubWebhookTest extends TestCase
 
     public function test_a_push_to_another_branch_is_ignored(): void
     {
-        $organization = Organization::factory()->create();
-        $project = FaultProject::factory()->create([
+        $organization = Organization::factory()->withGithubApp()->create();
+        FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
-            'github_webhook_secret' => 'whsec_test',
             'production_branch' => 'main',
         ]);
 
         $payload = $this->pushPayload('refs/heads/feature/foo', ['id' => 'abcdef1234567890']);
 
         $this->postJson(
-            "/api/webhooks/github/{$project->public_key}",
+            '/api/webhooks/github',
             $payload,
             [
                 'X-GitHub-Event' => 'push',
-                'X-Hub-Signature-256' => $this->signature($payload, 'whsec_test'),
+                'X-Hub-Signature-256' => $this->signature($payload),
             ]
         )->assertOk();
 
@@ -90,19 +87,17 @@ class GithubWebhookTest extends TestCase
 
     public function test_an_invalid_signature_is_rejected(): void
     {
-        $organization = Organization::factory()->create();
-        $project = FaultProject::factory()->create([
+        $organization = Organization::factory()->withGithubApp()->create();
+        FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
-            'github_webhook_secret' => 'whsec_test',
             'production_branch' => 'main',
         ]);
 
         $payload = $this->pushPayload('refs/heads/main', ['id' => 'abcdef1234567890']);
 
         $this->postJson(
-            "/api/webhooks/github/{$project->public_key}",
+            '/api/webhooks/github',
             $payload,
             [
                 'X-GitHub-Event' => 'push',
@@ -115,43 +110,28 @@ class GithubWebhookTest extends TestCase
 
     public function test_the_ping_event_is_acknowledged_without_a_release(): void
     {
-        $organization = Organization::factory()->create();
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
-            'github_webhook_secret' => 'whsec_test',
-        ]);
-
         $payload = ['zen' => 'Keep it logically awesome.'];
 
         $this->postJson(
-            "/api/webhooks/github/{$project->public_key}",
+            '/api/webhooks/github',
             $payload,
             [
                 'X-GitHub-Event' => 'ping',
-                'X-Hub-Signature-256' => $this->signature($payload, 'whsec_test'),
+                'X-Hub-Signature-256' => $this->signature($payload),
             ]
         )->assertOk();
 
         $this->assertDatabaseCount('releases', 0);
     }
 
-    public function test_a_project_without_a_webhook_secret_configured_is_not_found(): void
+    public function test_an_unknown_repository_is_not_found(): void
     {
-        $organization = Organization::factory()->create();
-        $project = FaultProject::factory()->create([
-            'organization_id' => $organization->id,
-            'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
-        ]);
-
-        $payload = $this->pushPayload('refs/heads/main', ['id' => 'abcdef1234567890']);
+        $payload = $this->pushPayload('refs/heads/main', ['id' => 'abcdef1234567890'], 'acme/unknown-repo');
 
         $this->postJson(
-            "/api/webhooks/github/{$project->public_key}",
+            '/api/webhooks/github',
             $payload,
-            ['X-GitHub-Event' => 'push', 'X-Hub-Signature-256' => 'sha256=whatever']
+            ['X-GitHub-Event' => 'push', 'X-Hub-Signature-256' => $this->signature($payload)]
         )->assertNotFound();
     }
 }

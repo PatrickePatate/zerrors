@@ -3,11 +3,14 @@
 namespace App\Support\Fault;
 
 use App\Models\FaultIssue;
+use App\Support\Github\GithubAppClient;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class GithubIssueCreator
 {
+    public function __construct(protected GithubAppClient $github) {}
+
     public function create(FaultIssue $issue): FaultIssue
     {
         $project = $issue->project;
@@ -31,7 +34,7 @@ class GithubIssueCreator
             ."[View in Zerrors]({$issueUrl})\n\n"
             .'Reported by Zerrors.';
 
-        $response = Http::withToken($project->github_token)
+        $response = Http::withToken($this->github->installationToken($project->organization->github_installation_id))
             ->acceptJson()
             ->post("https://api.github.com/repos/{$project->github_repo}/issues", [
                 'title' => $issue->title,

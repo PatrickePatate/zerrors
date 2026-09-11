@@ -33,27 +33,25 @@
         </div>
     @endif
 
-    <x-card :padding="false" class="mb-6">
+    <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
         <h2 class="border-b border-gray-100 px-5 py-3 text-sm font-medium text-gray-700">Members</h2>
-        <table class="w-full text-left text-sm">
-            <thead>
-                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                    <th class="px-5 py-2 font-medium">Name</th>
-                    <th class="px-5 py-2 font-medium">Email</th>
-                    <th class="px-5 py-2 font-medium">Role</th>
-                    <th class="px-5 py-2"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
+        <x-table :bordered="false">
+            <x-table.head>
+                <x-table.column>Name</x-table.column>
+                <x-table.column>Email</x-table.column>
+                <x-table.column>Role</x-table.column>
+                <x-table.column></x-table.column>
+            </x-table.head>
+            <x-table.body>
                 @foreach($this->members as $member)
                     @php
                         $canEditRole = in_array($this->myRole, ['owner', 'admin'], true)
                             && ($this->myRole === 'owner' || $member->pivot->role !== 'owner');
                     @endphp
-                    <tr class="hover:bg-gray-50" wire:key="member-{{ $member->id }}">
-                        <td class="px-5 py-3 font-medium text-gray-900">{{ $member->name }}</td>
-                        <td class="px-5 py-3 text-gray-500">{{ $member->email }}</td>
-                        <td class="px-5 py-3">
+                    <x-table.row wire:key="member-{{ $member->id }}">
+                        <x-table.cell class="font-medium text-gray-900">{{ $member->name }}</x-table.cell>
+                        <x-table.cell class="text-gray-500">{{ $member->email }}</x-table.cell>
+                        <x-table.cell>
                             @if($canEditRole)
                                 <div class="w-28">
                                     <x-form.select wire:change="updateRole({{ $member->id }}, $event.target.value)"
@@ -63,48 +61,46 @@
                             @else
                                 <x-badge color="{{ $member->pivot->role === 'owner' ? 'indigo' : 'gray' }}">{{ $member->pivot->role }}</x-badge>
                             @endif
-                        </td>
-                        <td class="px-5 py-3 text-right">
+                        </x-table.cell>
+                        <x-table.cell align="right">
                             @if(in_array($this->myRole, ['owner', 'admin']) && $member->id !== auth()->id())
                                 <button type="button" wire:click="removeMember({{ $member->id }})"
                                         wire:confirm="Remove {{ $member->name }} from this organization?"
                                         class="text-sm text-red-600 hover:underline">Remove</button>
                             @endif
-                        </td>
-                    </tr>
+                        </x-table.cell>
+                    </x-table.row>
                 @endforeach
-            </tbody>
-        </table>
+            </x-table.body>
+        </x-table>
         @if($removalError)
             <p class="border-t border-gray-100 px-5 py-3 text-sm text-red-600">{{ $removalError }}</p>
         @endif
-    </x-card>
+    </div>
 
     @if(in_array($this->myRole, ['owner', 'admin']) && $this->invites->isNotEmpty())
-        <x-card :padding="false">
+        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <h2 class="border-b border-gray-100 px-5 py-3 text-sm font-medium text-gray-700">Pending invites</h2>
-            <table class="w-full text-left text-sm">
-                <thead>
-                    <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                        <th class="px-5 py-2 font-medium">Email</th>
-                        <th class="px-5 py-2 font-medium">Role</th>
-                        <th class="px-5 py-2 font-medium">Expires</th>
-                        <th class="px-5 py-2"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
+            <x-table :bordered="false">
+                <x-table.head>
+                    <x-table.column>Email</x-table.column>
+                    <x-table.column>Role</x-table.column>
+                    <x-table.column>Expires</x-table.column>
+                    <x-table.column></x-table.column>
+                </x-table.head>
+                <x-table.body>
                     @foreach($this->invites as $invite)
-                        <tr class="hover:bg-gray-50" wire:key="invite-{{ $invite->id }}">
-                            <td class="px-5 py-3 text-gray-700">{{ $invite->email }}</td>
-                            <td class="px-5 py-3"><x-badge>{{ $invite->role }}</x-badge></td>
-                            <td class="px-5 py-3 text-gray-400">{{ $invite->isExpired() ? 'expired' : $invite->expires_at?->diffForHumans() }}</td>
-                            <td class="px-5 py-3 text-right">
+                        <x-table.row wire:key="invite-{{ $invite->id }}">
+                            <x-table.cell class="text-gray-700">{{ $invite->email }}</x-table.cell>
+                            <x-table.cell><x-badge>{{ $invite->role }}</x-badge></x-table.cell>
+                            <x-table.cell class="text-gray-400">{{ $invite->isExpired() ? 'expired' : $invite->expires_at?->diffForHumans() }}</x-table.cell>
+                            <x-table.cell align="right">
                                 <button type="button" wire:click="revokeInvite({{ $invite->id }})" class="text-sm text-red-600 hover:underline">Revoke</button>
-                            </td>
-                        </tr>
+                            </x-table.cell>
+                        </x-table.row>
                     @endforeach
-                </tbody>
-            </table>
-        </x-card>
+                </x-table.body>
+            </x-table>
+        </div>
     @endif
 </div>

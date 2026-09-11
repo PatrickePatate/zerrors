@@ -17,19 +17,19 @@ class GithubIssueTest extends TestCase
     public function test_it_creates_a_linked_github_issue(): void
     {
         Http::fake([
-            'api.github.com/*' => Http::response([
+            'api.github.com/app/installations/*/access_tokens' => Http::response(['token' => 'ghs_installation_token'], 201),
+            'api.github.com/repos/*' => Http::response([
                 'html_url' => 'https://github.com/acme/api/issues/42',
                 'number' => 42,
             ], 201),
         ]);
 
-        $organization = Organization::factory()->create();
+        $organization = Organization::factory()->withGithubApp()->create();
         $user = User::factory()->create();
         $organization->users()->attach($user->id, ['role' => 'owner']);
         $project = FaultProject::factory()->create([
             'organization_id' => $organization->id,
             'github_repo' => 'acme/api',
-            'github_token' => 'ghp_secret',
         ]);
         $issue = FaultIssue::factory()->create(['fault_project_id' => $project->id]);
 
@@ -42,7 +42,7 @@ class GithubIssueTest extends TestCase
         $this->assertSame(42, $issue->github_issue_number);
 
         Http::assertSent(fn ($request) => $request->url() === 'https://api.github.com/repos/acme/api/issues'
-            && $request->hasHeader('Authorization', 'Bearer ghp_secret'));
+            && $request->hasHeader('Authorization', 'Bearer ghs_installation_token'));
     }
 
     public function test_it_fails_gracefully_without_github_configured(): void

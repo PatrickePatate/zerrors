@@ -9,13 +9,17 @@ use App\Models\NotificationChannel;
 use App\Notifications\Fault\IssueAlertNotification;
 use App\Notifications\Fault\IssueCreatedNotification;
 use App\Notifications\Fault\IssueRegressedNotification;
+use App\Support\Slack\SlackAppClient;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 class IssueAlertNotifier
 {
+    public function __construct(protected SlackAppClient $slack) {}
+
     public function issueCreated(FaultIssue $issue): void
     {
         $this->dispatch($issue, NotificationRuleTrigger::NewIssue, 'New issue', new IssueCreatedNotification($issue));
@@ -80,21 +84,26 @@ class IssueAlertNotifier
     protected function send(NotificationChannel $channel, FaultIssue $issue, string $label): void
     {
         match ($channel->type) {
-            NotificationChannelType::Slack => $this->postSlack($channel->config['webhook_url'], $issue, $label),
+            NotificationChannelType::Slack => $this->postSlack($channel, $issue, $label),
             NotificationChannelType::Telegram => $this->postTelegram($channel->config['bot_token'], $channel->config['chat_id'], $issue, $label),
             NotificationChannelType::Email => Notification::route('mail', $channel->config['email'])->notify(new IssueAlertNotification($issue, $label)),
         };
     }
 
-    protected function postSlack(string $url, FaultIssue $issue, string $label): void
+    protected function postSlack(NotificationChannel $channel, FaultIssue $issue, string $label): void
     {
+        $botToken = $issue->project->organization->slack_bot_token;
+
+        if (empty($botToken)) {
+            Log::debug('Skipping Slack alert: organization has no Slack app connected.', ['organization_id' => $issue->project->organization_id]);
+
+            return;
+        }
+
         $link = route('organizations.issues.show', [$issue->project->organization, $issue->project, $issue]);
 
         try {
-            // Slack- and Discord-compatible payload shape (both read a top-level "text" field).
-            Http::timeout(5)->post($url, [
-                'text' => "*{$label}* in {$issue->project->name}: {$issue->title}\n{$link}",
-            ]);
+            $this->slack->postMessage($botToken, $channel->config['channel_id'], "*{$label}* in {$issue->project->name}: {$issue->title}\n{$link}");
         } catch (Throwable $e) {
             report($e);
         }

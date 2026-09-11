@@ -16,26 +16,22 @@
         </form>
     </x-card>
 
-    <x-card :padding="false">
-        <table class="w-full text-left text-sm">
-            <thead>
-                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                    <th class="px-5 py-3 font-medium">Organization</th>
-                    <th class="px-5 py-3 font-medium">Your role</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse($organizations as $organization)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-5 py-3">
-                            <a href="{{ route('organizations.projects.index', $organization) }}" class="font-medium text-gray-900 hover:underline">{{ $organization->name }}</a>
-                        </td>
-                        <td class="px-5 py-3"><x-badge color="indigo">{{ $organization->pivot->role }}</x-badge></td>
-                    </tr>
-                @empty
-                    <tr><td colspan="2" class="px-5 py-6 text-sm text-gray-400">You're not part of any organization yet — create one above.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </x-card>
+    <x-table>
+        <x-table.head>
+            <x-table.column>Organization</x-table.column>
+            <x-table.column>Your role</x-table.column>
+        </x-table.head>
+        <x-table.body>
+            @forelse($organizations as $organization)
+                <x-table.row>
+                    <x-table.cell>
+                        <a href="{{ route('organizations.projects.index', $organization) }}" class="font-medium text-gray-900 hover:underline">{{ $organization->name }}</a>
+                    </x-table.cell>
+                    <x-table.cell><x-badge color="indigo">{{ $organization->pivot->role }}</x-badge></x-table.cell>
+                </x-table.row>
+            @empty
+                <x-table.empty :colspan="2">You're not part of any organization yet — create one above.</x-table.empty>
+            @endforelse
+        </x-table.body>
+    </x-table>
 @endsection

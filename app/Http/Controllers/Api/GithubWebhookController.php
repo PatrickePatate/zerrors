@@ -5,24 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\FaultProject;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class GithubWebhookController extends Controller
 {
     /**
-     * Receives GitHub's "push" webhook. Configure it on the repository as:
-     * Payload URL: $project->githubWebhookUrl(), Content type: application/json,
-     * Secret: $project->github_webhook_secret, event: "Just the push event".
+     * Receives GitHub's "push" webhook, App-wide. Configured once on the GitHub
+     * App itself (Payload URL: /api/webhooks/github, Content type: application/json,
+     * Secret: services.github.webhook_secret, event: "Just the push event").
      *
      * A release is recorded automatically whenever a commit lands on the
      * project's configured production branch (which is what a merged PR
      * ultimately produces: a push to that branch).
      */
-    public function handle(Request $request, string $publicKey)
+    public function handle(Request $request)
     {
-        $project = $this->authenticate($request, $publicKey);
+        $this->verifySignature($request);
 
         if ($request->header('X-GitHub-Event') === 'ping') {
             return response()->json(['message' => 'pong']);
@@ -31,6 +30,8 @@ class GithubWebhookController extends Controller
         abort_unless($request->header('X-GitHub-Event') === 'push', Response::HTTP_BAD_REQUEST, 'Unsupported event');
 
         $payload = $this->payload($request);
+
+        $project = $this->resolveProject($payload);
 
         $branch = Str::after((string) ($payload['ref'] ?? ''), 'refs/heads/');
 
@@ -76,27 +77,48 @@ class GithubWebhookController extends Controller
     }
 
     /**
-     * Resolves the project from the public key in the URL, then verifies GitHub's
-     * HMAC signature over the raw request body using the project's webhook secret.
+     * Resolves the project by matching the pushed repository's full name against
+     * `github_repo`. When the payload carries an installation id, the matching
+     * project's organization must also have that installation connected, so
+     * two organizations that (mistakenly) configured the same repo name don't
+     * collide.
      */
-    protected function authenticate(Request $request, string $publicKey): FaultProject
+    protected function resolveProject(array $payload): FaultProject
     {
-        $project = Cache::remember(
-            "fault:project:webhook:{$publicKey}",
-            300,
-            fn () => FaultProject::where('public_key', $publicKey)->first()
-        );
+        $repoFullName = $payload['repository']['full_name'] ?? null;
 
-        abort_unless($project && $project->hasGithubWebhookConfigured(), Response::HTTP_NOT_FOUND);
+        abort_unless(is_string($repoFullName) && $repoFullName !== '', Response::HTTP_UNPROCESSABLE_ENTITY, 'Missing repository in payload');
 
+        $installationId = $payload['installation']['id'] ?? null;
+
+        $query = FaultProject::query()
+            ->join('organizations', 'organizations.id', '=', 'fault_projects.organization_id')
+            ->where('fault_projects.github_repo', $repoFullName)
+            ->whereNotNull('organizations.github_installation_id');
+
+        if ($installationId !== null) {
+            $query->where('organizations.github_installation_id', (string) $installationId);
+        }
+
+        $project = $query->select('fault_projects.*')->first();
+
+        abort_unless($project !== null, Response::HTTP_NOT_FOUND, 'No project configured for this repository');
+
+        return $project;
+    }
+
+    /**
+     * Verifies GitHub's HMAC signature over the raw request body using the
+     * GitHub App's shared webhook secret.
+     */
+    protected function verifySignature(Request $request): void
+    {
         $signature = (string) $request->header('X-Hub-Signature-256');
 
         abort_unless($signature !== '', Response::HTTP_UNAUTHORIZED, 'Missing signature');
 
-        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), $project->github_webhook_secret);
+        $expected = 'sha256='.hash_hmac('sha256', $request->getContent(), (string) config('services.github.webhook_secret'));
 
         abort_unless(hash_equals($expected, $signature), Response::HTTP_UNAUTHORIZED, 'Invalid signature');
-
-        return $project;
     }
 }

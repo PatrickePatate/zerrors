@@ -31,38 +31,35 @@
         </div>
     </x-card>
 
-    <x-card :padding="false">
-        <table class="w-full text-left text-sm">
-            <thead>
-                <tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                    <th class="px-5 py-3 font-medium">Status</th>
-                    <th class="px-5 py-3 font-medium">Issue</th>
-                    <th class="px-5 py-3 font-medium">Level</th>
-                    <th class="px-5 py-3 font-medium">Events</th>
-                    <th class="px-5 py-3 font-medium">Last seen</th>
-                    <th class="px-5 py-3 font-medium">Assignee</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse($issues as $issue)
-                    <tr
+    <x-table>
+        <x-table.head>
+            <x-table.column>Status</x-table.column>
+            <x-table.column>Issue</x-table.column>
+            <x-table.column>Level</x-table.column>
+            <x-table.column>Events</x-table.column>
+            <x-table.column>Last seen</x-table.column>
+            <x-table.column>Assignee</x-table.column>
+        </x-table.head>
+        <x-table.body>
+            @forelse($issues as $issue)
+                    <x-table.row
+                        :muted="$issue->status !== 'unresolved'"
                         x-data="{ menuOpen: false, x: 0, y: 0 }"
                         @contextmenu.prevent="$dispatch('issue-context-menu-open', {{ $issue->id }}); x = $event.clientX; y = $event.clientY; menuOpen = true"
                         @issue-context-menu-open.window="if ($event.detail !== {{ $issue->id }}) menuOpen = false"
                         @click.outside="menuOpen = false"
                         @keydown.escape.window="menuOpen = false"
-                        :class="menuOpen && 'bg-gray-50'"
-                        class="hover:bg-gray-50"
+                        ::class="menuOpen && 'bg-gray-50'"
                     >
-                        <td class="px-5 py-3"><x-badge :color="$statusColors[$issue->status] ?? 'gray'">{{ ucfirst($issue->status) }}</x-badge></td>
-                        <td class="px-5 py-3">
+                        <x-table.cell><x-badge :color="$statusColors[$issue->status] ?? 'gray'">{{ ucfirst($issue->status) }}</x-badge></x-table.cell>
+                        <x-table.cell>
                             <a href="{{ route('organizations.issues.show', [$organization, $project, $issue]) }}" class="font-medium text-gray-900 hover:underline">{{ $issue->title }}</a>
                             <p class="text-xs text-gray-400">{{ $issue->culprit }}</p>
-                        </td>
-                        <td class="px-5 py-3"><x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ $issue->level }}</x-badge></td>
-                        <td class="px-5 py-3 text-gray-600">{{ $issue->times_seen }}</td>
-                        <td class="px-5 py-3 text-gray-500">{{ $issue->last_seen_at?->diffForHumans() }}</td>
-                        <td class="px-5 py-3 text-gray-500">{{ $issue->assignee?->name ?? '—' }}</td>
+                        </x-table.cell>
+                        <x-table.cell><x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ $issue->level }}</x-badge></x-table.cell>
+                        <x-table.cell class="text-gray-600">{{ $issue->times_seen }}</x-table.cell>
+                        <x-table.cell class="text-gray-500">{{ $issue->last_seen_at?->diffForHumans() }}</x-table.cell>
+                        <x-table.cell class="text-gray-500">{{ $issue->assignee?->name ?? '—' }}</x-table.cell>
                         <template x-teleport="body">
                             <div
                                 x-show="menuOpen"
@@ -127,13 +124,12 @@
                                 </a>
                             </div>
                         </template>
-                    </tr>
-                @empty
-                    <tr><td colspan="6" class="px-5 py-6 text-sm text-gray-400">No issues match these filters.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </x-card>
+                    </x-table.row>
+            @empty
+                    <x-table.empty :colspan="6">No issues match these filters.</x-table.empty>
+            @endforelse
+        </x-table.body>
+    </x-table>
 
     <div class="mt-4">{{ $issues->links() }}</div>
 </div>
