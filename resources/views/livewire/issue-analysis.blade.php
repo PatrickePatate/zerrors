@@ -14,7 +14,7 @@
         @endif
 
         <div wire:loading wire:target="analyze" class="mt-3">
-            <div wire:stream="analysis-stream" class="prose prose-sm max-h-[32rem] max-w-none overflow-y-auto text-sm whitespace-pre-wrap text-gray-700"></div>
+            <div wire:stream="analysis-stream" class="prose prose-sm max-h-[32rem] max-w-none overflow-y-auto text-sm whitespace-pre-wrap break-words text-gray-700"></div>
         </div>
 
         <div wire:loading.remove wire:target="analyze">
@@ -41,7 +41,7 @@
                         <x-lucide-telescope class="h-4 w-4 text-indigo-500" />
                         Deeper explanation
                     </h3>
-                    <div wire:stream="deepen-stream" class="prose prose-sm mt-3 max-h-[32rem] max-w-none overflow-y-auto text-sm whitespace-pre-wrap text-gray-700"></div>
+                    <div wire:stream="deepen-stream" class="prose prose-sm mt-3 max-h-[32rem] max-w-none overflow-y-auto text-sm whitespace-pre-wrap break-words text-gray-700"></div>
                 </div>
 
                 <div wire:loading.remove wire:target="deepen">
