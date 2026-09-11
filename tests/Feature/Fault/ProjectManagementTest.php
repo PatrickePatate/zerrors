@@ -95,4 +95,52 @@ class ProjectManagementTest extends TestCase
 
         $this->assertSame($source->id, $project->fresh()->organization_id);
     }
+
+    public function test_owner_can_delete_a_project_with_the_correct_confirmation_phrase(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id, 'name' => 'My Project']);
+
+        $this->actingAs($owner)
+            ->delete(route('organizations.projects.destroy', [$organization, $project]), [
+                'confirm_name' => 'Bye bye My Project',
+            ])
+            ->assertRedirect(route('organizations.projects.index', $organization));
+
+        $this->assertModelMissing($project);
+    }
+
+    public function test_deleting_a_project_requires_the_exact_confirmation_phrase(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id, 'name' => 'My Project']);
+
+        $this->actingAs($owner)
+            ->delete(route('organizations.projects.destroy', [$organization, $project]), [
+                'confirm_name' => 'My Project',
+            ])
+            ->assertSessionHasErrors('confirm_name');
+
+        $this->assertModelExists($project);
+    }
+
+    public function test_member_cannot_delete_a_project(): void
+    {
+        $organization = Organization::factory()->create();
+        $member = User::factory()->create();
+        $organization->users()->attach($member->id, ['role' => 'member']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id, 'name' => 'My Project']);
+
+        $this->actingAs($member)
+            ->delete(route('organizations.projects.destroy', [$organization, $project]), [
+                'confirm_name' => 'Bye bye My Project',
+            ])
+            ->assertForbidden();
+
+        $this->assertModelExists($project);
+    }
 }

@@ -39,11 +39,13 @@
 
         @if($os && (!empty($os['name']) || !empty($os['version'])))
             <x-tooltip message="OS version">
-                <div class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600">
-                    <x-lucide-server class="h-3.5 w-3.5 text-gray-400" />
-                    <span class="font-medium text-gray-700">{{ $os['name'] ?? 'OS' }}</span>
-                    @if(!empty($os['version'])) <span>{{ $os['version'] }}</span> @endif
-                    @if(!empty($os['kernel_version'])) <span class="text-gray-400">&middot; {{ $os['kernel_version'] }}</span> @endif
+                <div class="inline-flex max-w-xs items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600">
+                    <x-lucide-server class="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    <span class="shrink-0 font-medium text-gray-700">{{ $os['name'] ?? 'OS' }}</span>
+                    @if(!empty($os['version'])) <span class="shrink-0">{{ $os['version'] }}</span> @endif
+                    @if(!empty($os['kernel_version']))
+                        <span class="min-w-0 truncate text-gray-400" title="{{ $os['kernel_version'] }}">&middot; {{ $os['kernel_version'] }}</span>
+                    @endif
                 </div>
             </x-tooltip>
         @endif
