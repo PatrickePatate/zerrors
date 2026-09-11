@@ -105,6 +105,7 @@ class ProcessFaultEvent implements ShouldQueue
             'contexts' => $payload['contexts'] ?? null,
             'request' => $payload['request'] ?? null,
             'breadcrumbs' => $payload['breadcrumbs']['values'] ?? $payload['breadcrumbs'] ?? null,
+            'log_context' => $payload['log_context'] ?? null,
             'payload' => $payload,
             'occurred_at' => $occurredAt,
         ]);
