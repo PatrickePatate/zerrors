@@ -26,7 +26,11 @@
         <label for="{{ $id }}" class="mb-1 block text-sm font-medium text-gray-700">{{ $label }}</label>
     @endif
 
-    <div x-data="formSelect(@js($items), @js($selected))" class="relative">
+    <div x-data="formSelect(@js($items), @js($selected))"
+         class="relative"
+         @keydown.escape.window="open = false"
+         @scroll.window.capture="open = false"
+         @resize.window="open = false">
         <input type="hidden" x-ref="hidden" value="{{ $selected }}" {{ $attributes }}>
 
         <button type="button" id="{{ $id }}" x-ref="button"
@@ -48,28 +52,31 @@
             </span>
         </button>
 
-        <ul x-show="open"
-            x-ref="list"
-            @click.away="open = false"
-            x-transition:enter="transition ease-out duration-100"
-            x-transition:enter-start="opacity-0 -translate-y-1"
-            x-transition:enter-end="opacity-100"
-            class="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none"
-            x-cloak>
-            <template x-for="item in items" :key="item.value">
-                <li @click="select(item)"
-                    @mousemove="activeItem = item"
-                    :id="item.value + '-' + id"
-                    :class="isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'"
-                    class="relative flex cursor-default items-center py-2 pr-3 pl-8 select-none data-disabled:pointer-events-none data-disabled:opacity-50">
-                    <x-lucide-check x-show="selectedValue === item.value" class="absolute left-2 h-4 w-4 text-gray-500" />
-                    <template x-if="item.image">
-                        <img :src="item.image" alt="" class="mr-2 h-5 w-5 shrink-0 rounded-full object-cover">
-                    </template>
-                    <span class="block truncate font-medium" x-text="item.title"></span>
-                </li>
-            </template>
-        </ul>
+        <template x-teleport="body">
+            <ul x-show="open"
+                x-ref="list"
+                @click.away="open = false"
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:enter-end="opacity-100"
+                :style="listStyle"
+                class="fixed z-50 mt-1 max-h-56 overflow-auto rounded-md bg-white py-1 text-sm shadow-lg ring-1 ring-black/5 focus:outline-none"
+                x-cloak>
+                <template x-for="item in items" :key="item.value">
+                    <li @click="select(item)"
+                        @mousemove="activeItem = item"
+                        :id="item.value + '-' + id"
+                        :class="isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-700'"
+                        class="relative flex cursor-default items-center py-2 pr-3 pl-8 select-none data-disabled:pointer-events-none data-disabled:opacity-50">
+                        <x-lucide-check x-show="selectedValue === item.value" class="absolute left-2 h-4 w-4 text-gray-500" />
+                        <template x-if="item.image">
+                            <img :src="item.image" alt="" class="mr-2 h-5 w-5 shrink-0 rounded-full object-cover">
+                        </template>
+                        <span class="block truncate font-medium" x-text="item.title"></span>
+                    </li>
+                </template>
+            </ul>
+        </template>
     </div>
 
     @if($error)

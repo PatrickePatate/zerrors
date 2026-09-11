@@ -22,10 +22,21 @@ document.addEventListener('alpine:init', () => {
         selectedValue: selected,
         activeItem: null,
         id: null,
+        // The options list is teleported to <body> and positioned with fixed
+        // coordinates computed from the button's rect, rather than absolutely
+        // positioned inside this component — an absolute panel gets clipped
+        // (and forces a scrollbar) whenever the select lives inside an
+        // `overflow-hidden`/`overflow-x-auto` ancestor, e.g. a table wrapper.
+        listStyle: '',
 
         init() {
             this.id = this.$id('form-select');
             this.activeItem = this.selectedItem;
+        },
+
+        updatePosition() {
+            const rect = this.$refs.button.getBoundingClientRect();
+            this.listStyle = `top:${rect.bottom}px; left:${rect.left}px; width:${rect.width}px;`;
         },
 
         get selectedItem() {
@@ -52,6 +63,7 @@ document.addEventListener('alpine:init', () => {
 
         openAndActivateSelected() {
             this.activeItem = this.selectedItem ?? this.items.find((item) => !item.disabled) ?? null;
+            this.updatePosition();
             this.open = true;
         },
 

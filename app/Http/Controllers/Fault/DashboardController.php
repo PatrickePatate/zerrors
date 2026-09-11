@@ -130,6 +130,30 @@ class DashboardController extends Controller
             ->with('status', "Project moved to {$destination->name}.");
     }
 
+    /**
+     * Owners/admins only. Wipes the project and everything under it
+     * (issues, events, releases, notification channels all cascade).
+     */
+    public function destroy(Request $request, Organization $organization, FaultProject $project)
+    {
+        abort_unless($project->organization_id === $organization->id, 404);
+        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+
+        $request->validate([
+            'confirm_name' => ['required', 'string'],
+        ]);
+
+        if ($request->input('confirm_name') !== "Bye bye {$project->name}") {
+            return back()->withErrors(['confirm_name' => 'Type the confirmation phrase exactly to delete this project.']);
+        }
+
+        app(AuditLogger::class)->log($organization, $request->user(), 'project.deleted', $project->name);
+
+        $project->delete();
+
+        return redirect()->route('organizations.projects.index', $organization)->with('status', "\"{$project->name}\" has been deleted.");
+    }
+
     public function show(Request $request, Organization $organization, FaultProject $project): View
     {
         abort_unless($project->organization_id === $organization->id, 404);
