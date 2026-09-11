@@ -46,6 +46,10 @@
                     @php
                         $currentProject = request()->route('project');
                     @endphp
+                    <x-nav-link :href="route('organizations.overview', $organization)" :active="request()->routeIs('organizations.overview')">
+                        <x-lucide-layout-dashboard class="h-4 w-4" />
+                        Dashboard
+                    </x-nav-link>
                     <div x-data="{ projectsOpen: {{ request()->routeIs('organizations.projects.*') || request()->routeIs('organizations.issues.*') ? 'true' : 'false' }} }">
                         <div class="flex items-center">
                             <x-nav-link :href="route('organizations.projects.index', $organization)" :active="request()->routeIs('organizations.projects.*') || request()->routeIs('organizations.issues.*')" class="flex-1">

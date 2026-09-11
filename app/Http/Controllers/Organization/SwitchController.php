@@ -18,7 +18,7 @@ class SwitchController extends Controller
         $organizations = $request->user()->organizations()->orderBy('name')->get();
 
         if ($organizations->count() === 1) {
-            return redirect()->route('organizations.projects.index', $organizations->first());
+            return redirect()->route('organizations.overview', $organizations->first());
         }
 
         return view('fault.organizations.picker', ['organizations' => $organizations]);
@@ -42,6 +42,6 @@ class SwitchController extends Controller
         $organization = Organization::create($data);
         $organization->users()->attach($request->user()->id, ['role' => 'owner']);
 
-        return redirect()->route('organizations.projects.index', $organization);
+        return redirect()->route('organizations.overview', $organization);
     }
 }

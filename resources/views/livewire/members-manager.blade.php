@@ -49,7 +49,12 @@
                             && ($this->myRole === 'owner' || $member->pivot->role !== 'owner');
                     @endphp
                     <x-table.row wire:key="member-{{ $member->id }}">
-                        <x-table.cell class="font-medium text-gray-900">{{ $member->name }}</x-table.cell>
+                        <x-table.cell class="font-medium text-gray-900">
+                            <div class="flex items-center gap-2">
+                                <img src="{{ $member->avatarUrl() }}" alt="{{ $member->name }}" class="h-6 w-6 shrink-0 rounded-full object-cover">
+                                {{ $member->name }}
+                            </div>
+                        </x-table.cell>
                         <x-table.cell class="text-gray-500">{{ $member->email }}</x-table.cell>
                         <x-table.cell>
                             @if($canEditRole)
@@ -76,6 +81,9 @@
         @if($removalError)
             <p class="border-t border-gray-100 px-5 py-3 text-sm text-red-600">{{ $removalError }}</p>
         @endif
+        <div class="border-t border-gray-100 px-5 py-3">
+            <x-pagination :paginator="$this->members" />
+        </div>
     </div>
 
     @if(in_array($this->myRole, ['owner', 'admin']) && $this->invites->isNotEmpty())

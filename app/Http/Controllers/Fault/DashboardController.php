@@ -6,6 +6,8 @@ use App\Enums\FaultPlatform;
 use App\Enums\NotificationChannelType;
 use App\Enums\NotificationRuleTrigger;
 use App\Http\Controllers\Controller;
+use App\Models\FaultEvent;
+use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Support\Organization\AuditLogger;
@@ -18,6 +20,25 @@ use Sentry\Dsn;
 
 class DashboardController extends Controller
 {
+    public function overview(Organization $organization): View
+    {
+        $projectIds = $organization->projects()->pluck('id');
+
+        $since24h = now()->subDay();
+
+        $stats = [
+            'events_24h' => FaultEvent::whereIn('fault_project_id', $projectIds)->where('occurred_at', '>=', $since24h)->count(),
+            'new_issues_24h' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('first_seen_at', '>=', $since24h)->count(),
+            'unresolved_issues' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('status', 'unresolved')->count(),
+            'projects' => $projectIds->count(),
+        ];
+
+        return view('fault.dashboard.index', [
+            'organization' => $organization,
+            'stats' => $stats,
+        ]);
+    }
+
     public function index(Organization $organization): View
     {
         $projects = $organization->projects()->withCount([

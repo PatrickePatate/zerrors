@@ -10,9 +10,12 @@ use App\Support\Organization\AuditLogger;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class MembersManager extends Component
 {
+    use WithPagination;
+
     public Organization $organization;
 
     public string $email = '';
@@ -39,7 +42,7 @@ class MembersManager extends Component
     #[Computed]
     public function members()
     {
-        return $this->organization->users()->orderBy('name')->get();
+        return $this->organization->users()->orderBy('name')->paginate(10);
     }
 
     #[Computed]
