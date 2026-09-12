@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
             $request->route('projectId') ?? $request->route('publicKey')
         ));
 
+        if($this->app->environment('production') && config('octane.server')) {
+            \URL::forceScheme('https');
+        }
+
         Event::listen(MonitorStatusChanged::class, SendMonitorStatusChangeNotification::class);
     }
 }
