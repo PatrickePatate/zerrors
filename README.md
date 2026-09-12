@@ -59,6 +59,31 @@ composer run dev
 
 This starts the app server, queue worker, and Vite dev server together. Visit the app and register the first account to create your organization.
 
+### Running in production with Octane
+
+Zerrors ships with [Laravel Octane](https://laravel.com/docs/octane) for high-performance production serving. Octane keeps the framework booted in memory between requests instead of bootstrapping Laravel from scratch on every request.
+
+1. Install an Octane server binary. The default is [RoadRunner](https://roadrunner.dev):
+   ```bash
+   php artisan octane:install --server=roadrunner
+   ```
+   [FrankenPHP](https://frankenphp.dev) and [Swoole](https://www.swoole.co.uk) are also supported — pass `--server=frankenphp` or `--server=swoole` instead.
+2. Set the server in `.env`:
+   ```
+   OCTANE_SERVER=roadrunner
+   ```
+3. Start the server:
+   ```bash
+   php artisan octane:start
+   ```
+4. Keep Horizon running separately for queue processing (`php artisan horizon`), since Octane only serves HTTP requests.
+
+A few things to watch for when running under Octane, since the application stays in memory across requests:
+
+- Avoid storing per-request state in static properties, singletons, or globally bound container instances — it will leak between requests.
+- Use [Octane's `Octane::state()` / listeners](https://laravel.com/docs/octane#managing-memory-leaks) or the built-in listeners (already wired in `config/octane.php`) to reset things like the database connection between requests if you add stateful services.
+- Restart workers after deploying new code (`php artisan octane:reload`) — Octane won't pick up code changes on its own since the app stays booted.
+
 ### Sending errors to Zerrors
 
 Once you've created a project, use its DSN with any [Sentry SDK](https://docs.sentry.io/platforms/) exactly as you would with Sentry — Zerrors implements the same ingestion endpoints.
@@ -123,6 +148,14 @@ This project uses [Laravel Pint](https://laravel.com/docs/pint):
 vendor/bin/pint
 ```
 
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to get set up and submit changes. Please also read our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+If you discover a security vulnerability, please follow the responsible disclosure process described in [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
 ## License
 
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Zerrors is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). You're free to use, modify, and self-host it for any noncommercial purpose. Commercial use (including offering Zerrors, or a service built on it, to third parties for a fee) requires a separate commercial license — get in touch if that's you.
