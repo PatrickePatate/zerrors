@@ -58,6 +58,11 @@ class Organization extends Model
         return $this->hasMany(FaultProject::class);
     }
 
+    public function monitors(): HasMany
+    {
+        return $this->hasMany(Monitor::class);
+    }
+
     public function invites(): HasMany
     {
         return $this->hasMany(OrganizationInvite::class);

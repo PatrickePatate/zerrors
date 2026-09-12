@@ -1,4 +1,4 @@
-@props(['align' => 'left', 'up' => false])
+@props(['align' => 'left', 'up' => false, 'matchTriggerWidth' => false])
 
 {{--
     The menu is teleported to <body> and positioned with fixed coordinates
@@ -15,7 +15,8 @@
             const rect = $refs.dropdownTrigger.getBoundingClientRect();
             const top = {{ $up ? 'rect.top' : 'rect.bottom' }};
             const left = {{ $align === 'right' ? 'rect.right' : 'rect.left' }};
-            this.menuStyle = `top:${top}px; left:${left}px; transform: translate({{ $align === 'right' ? '-100%' : '0' }}, {{ $up ? '-100%' : '0' }});`;
+            const width = {{ $matchTriggerWidth ? 'true' : 'false' }} ? `width:${rect.width}px;` : '';
+            this.menuStyle = `top:${top}px; left:${left}px; ${width} transform: translate({{ $align === 'right' ? '-100%' : '0' }}, {{ $up ? '-100%' : '0' }});`;
         },
         toggle() {
             if (this.dropdownOpen) {

@@ -12,6 +12,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Redis;
 
 class ProcessFaultEvent implements ShouldQueue
 {
@@ -74,16 +75,28 @@ class ProcessFaultEvent implements ShouldQueue
         $wasNew = $issue->wasRecentlyCreated;
         $isRegression = ! $wasNew && $issue->status === 'resolved';
 
-        // Atomic counter bump; avoids a read-modify-write race under concurrent workers.
-        $issue->increment('times_seen');
-        $issue->forceFill([
-            'last_seen_at' => $occurredAt,
-            'level' => $level,
-            // A resolved issue reoccurring is a regression and must resurface;
-            // an ignored issue is a deliberate choice, so new events don't undo it.
-            'status' => $isRegression ? 'unresolved' : $issue->status,
-            'regressed_at' => $isRegression ? now() : $issue->regressed_at,
-        ])->save();
+        if (! $wasNew) {
+            // Level/status/regression changes are comparatively rare, so they're
+            // still written immediately. The times_seen/last_seen_at bump below
+            // is batched instead: under a burst of events for the same issue,
+            // an immediate increment+save on every single one would serialize
+            // every worker on that one row's lock. Deferring it to periodic
+            // bulk updates (see FlushFaultIssueCounters) keeps this row cheap
+            // to write regardless of how hot the issue is.
+            $issue->forceFill([
+                'level' => $level,
+                // A resolved issue reoccurring is a regression and must resurface;
+                // an ignored issue is a deliberate choice, so new events don't undo it.
+                'status' => $isRegression ? 'unresolved' : $issue->status,
+                'regressed_at' => $isRegression ? now() : $issue->regressed_at,
+            ])->save();
+        }
+
+        // $issue->times_seen still reflects the last value flushed to the database
+        // (the baseline); adding the pending count since that flush gives the true,
+        // up-to-the-event count, which IssueAlertNotifier needs for exact occurrence
+        // thresholds (e.g. "notify on the 100th event") without waiting on the flush.
+        $issue->times_seen += $this->bumpIssueCounters($issue, $occurredAt);
 
         FaultEvent::create([
             'fault_project_id' => $this->projectId,
@@ -120,5 +133,22 @@ class ProcessFaultEvent implements ShouldQueue
         }
 
         return Carbon::parse($timestamp);
+    }
+
+    /**
+     * Record this occurrence in Redis instead of writing straight to
+     * fault_issues, and mark the issue "dirty" so FlushFaultIssueCounters
+     * picks it up. Returns the pending count accumulated since the last
+     * flush, so the caller can compute the true, un-flushed times_seen.
+     */
+    protected function bumpIssueCounters(FaultIssue $issue, Carbon $occurredAt): int
+    {
+        $redis = Redis::connection();
+
+        $pending = (int) $redis->incr("fault:issue:{$issue->id}:pending_count");
+        $redis->set("fault:issue:{$issue->id}:pending_last_seen", $occurredAt->getTimestamp());
+        $redis->sadd('fault:dirty-issues', $issue->id);
+
+        return $pending;
     }
 }

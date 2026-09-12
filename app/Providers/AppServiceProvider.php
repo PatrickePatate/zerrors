@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Events\MonitorStatusChanged;
+use App\Listeners\SendMonitorStatusChangeNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -28,5 +31,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('fault-ingest', fn (Request $request) => Limit::perMinute(300)->by(
             $request->route('projectId') ?? $request->route('publicKey')
         ));
+
+        Event::listen(MonitorStatusChanged::class, SendMonitorStatusChangeNotification::class);
     }
 }

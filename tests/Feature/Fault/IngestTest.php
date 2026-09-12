@@ -59,7 +59,12 @@ class IngestTest extends TestCase
 
         $issue = FaultIssue::first();
         $this->assertSame('RuntimeException', $issue->title);
-        $this->assertSame(1, $issue->times_seen);
+
+        // times_seen is bumped in Redis and only flushed to the database
+        // periodically (see FlushFaultIssueCounters) to avoid a row lock
+        // per event; run the flush to assert on the persisted value.
+        $this->artisan('fault:flush-issue-counters');
+        $this->assertSame(1, $issue->fresh()->times_seen);
 
         Bus::assertDispatched(
             ForwardFaultEvent::class,
@@ -101,6 +106,8 @@ class IngestTest extends TestCase
 
         $this->assertDatabaseCount('fault_issues', 1);
         $this->assertDatabaseCount('fault_events', 3);
+
+        $this->artisan('fault:flush-issue-counters');
         $this->assertSame(3, FaultIssue::first()->times_seen);
     }
 

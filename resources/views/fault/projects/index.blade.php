@@ -80,6 +80,10 @@
                                 :style="menuStyle"
                                 class="fixed z-50 w-max min-w-max rounded-md border border-neutral-200/70 bg-white p-1 shadow-md text-neutral-700"
                             >
+                                <x-dropdown-link :href="route('organizations.projects.show', [$organization, $project])" @click="menuOpen = false">
+                                    <x-lucide-eye class="h-4 w-4" /> View
+                                </x-dropdown-link>
+
                                 <x-modal max-width="sm" :open-on-error="$errors->has('confirm_name') && old('project_id') == $project->id">
                                     <x-slot:trigger>
                                         <x-dropdown-link tag="button" type="button" @click="menuOpen = false" class="text-red-600 hover:bg-red-50">

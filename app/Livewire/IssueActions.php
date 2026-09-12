@@ -6,8 +6,11 @@ use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
+use App\Models\User;
 use App\Support\Fault\GithubCommitFetcher;
 use App\Support\Fault\GithubIssueCreator;
+use App\Support\Organization\AuditLogger;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use RuntimeException;
 
@@ -27,20 +30,31 @@ class IssueActions extends Component
 
     public ?string $commitError = null;
 
-    public function mount(Organization $organization, FaultProject $project, FaultIssue $issue, ?FaultEvent $event = null): void
+    /** @var Collection<int, User> */
+    public Collection $members;
+
+    public function mount(Organization $organization, FaultProject $project, FaultIssue $issue, ?FaultEvent $event = null, ?Collection $members = null): void
     {
         $this->organization = $organization;
         $this->project = $project;
         $this->issue = $issue;
         $this->event = $event;
         $this->assignedToUserId = $issue->assigned_to_user_id;
+        $this->members = $members ?? $organization->users()->orderBy('name')->get();
     }
 
     public function updateStatus(string $status): void
     {
         abort_unless(in_array($status, ['unresolved', 'resolved', 'ignored'], true), 422);
 
+        $previousStatus = $this->issue->status;
+
         $this->issue->update(['status' => $status]);
+
+        app(AuditLogger::class)->log($this->organization, auth()->user(), 'issue.status_updated', $this->issue->title, [
+            'from' => $previousStatus,
+            'to' => $status,
+        ]);
     }
 
     public function updatedAssignedToUserId(?string $value): void
@@ -90,7 +104,7 @@ class IssueActions extends Component
     public function render()
     {
         return view('livewire.issue-actions', [
-            'members' => $this->organization->users()->orderBy('name')->get(),
+            'members' => $this->members,
             'linkedRelease' => $this->issue->linkedRelease(),
         ]);
     }

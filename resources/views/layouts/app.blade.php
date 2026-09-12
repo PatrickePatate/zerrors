@@ -56,8 +56,7 @@
                                 <x-lucide-home class="h-4 w-4" />
                                 Projects
                             </x-nav-link>
-                            <button type="button" @click="projectsOpen = !projectsOpen"
-                                    class="mb-0.5 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
+                            <button type="button" @click="projectsOpen = !projectsOpen" class="mb-0.5 min-h-full rounded-r-lg p-2.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900">
                                 <x-lucide-chevron-down class="h-3.5 w-3.5 transition-transform" x-bind:class="{ 'rotate-180': projectsOpen }" />
                             </button>
                         </div>
@@ -69,10 +68,16 @@
                             @endforeach
                         </div>
                     </div>
+                    <x-nav-link :href="route('organizations.monitors.index', $organization)" :active="request()->routeIs('organizations.monitors.*')">
+                        <x-lucide-activity class="h-4 w-4" />
+                        Monitoring
+                    </x-nav-link>
                     <x-nav-link :href="route('organizations.members.index', $organization)" :active="request()->routeIs('organizations.members.*')">
                         <x-lucide-users class="h-4 w-4" />
                         Members
                     </x-nav-link>
+
+                    <p class="px-2 pb-1 pt-4 text-xs font-medium tracking-wide text-gray-400 uppercase">Administration</p>
                     <x-nav-link :href="route('organizations.settings.edit', $organization)" :active="request()->routeIs('organizations.settings.*')">
                         <x-lucide-settings class="h-4 w-4" />
                         Settings

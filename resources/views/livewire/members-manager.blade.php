@@ -28,7 +28,7 @@
 
     @if($inviteLink)
         <div class="mb-6 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
-            Invite created. Share this link (email sending isn't configured):
+            Invite sent. You can also share this link directly:
             <code class="mt-1 block break-all rounded bg-white/60 px-2 py-1 text-xs">{{ $inviteLink }}</code>
         </div>
     @endif

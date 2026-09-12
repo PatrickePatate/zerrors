@@ -21,17 +21,30 @@
                 </h1>
                 <p class="mt-1 text-sm text-gray-500">{{ $issue->culprit }}</p>
 
-                <div class="mt-3 flex flex-wrap items-center gap-2">
+                @php
+                    $environment = $currentEvent?->environment;
+                @endphp
+                <div class="mt-3 mb-2 flex flex-wrap items-center gap-2">
                     <x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ ucfirst($issue->level) }}</x-badge>
-                    <span class="text-sm text-gray-400">
-                        {{ $issue->times_seen }} events &middot; first seen {{ $issue->first_seen_at?->diffForHumans() }} &middot; last seen {{ $issue->last_seen_at?->diffForHumans() }}
-                        @if($issue->first_seen_release) &middot; first seen in <code class="text-gray-500">{{ $issue->first_seen_release }}</code> @endif
-                        @if($issue->regressed_at) &middot; <span class="text-amber-600">regressed {{ $issue->regressed_at->diffForHumans() }}</span> @endif
-                    </span>
+                    <x-badge :color="$environment === 'production' ? 'amber' : 'gray'">{{$environment}}</x-badge>
+                    <div class="text-sm text-gray-400">
+                        <b>{{ $issue->times_seen }}</b> events
+                    </div>
                 </div>
+                <div class="text-sm text-gray-400">
+                    <x-lucide-eye class="w-4 h-4 inline"/> First seen {{ $issue->first_seen_at?->diffForHumans() }}, last seen {{ $issue->last_seen_at?->diffForHumans() }}.
+                </div>
+                @if($issue->first_seen_release || $issue->regressed_at)
+                    <div class="inline-flex gap-2 items-center text-sm text-gray-400">
+                        @if($issue->first_seen_release)
+                            <x-lucide-rocket class="w-4 h-4 inline"/> First seen in <code class="text-gray-500">{{ $issue->first_seen_release }}</code>
+                        @endif
+                        @if($issue->regressed_at) <span class="text-amber-600">Regressed {{ $issue->regressed_at->diffForHumans() }}</span> @endif
+                    </div>
+                @endif
 
                 <div class="mt-4">
-                    <livewire:issue-actions :organization="$organization" :project="$project" :issue="$issue" :event="$currentEvent" />
+                    <livewire:issue-actions :organization="$organization" :project="$project" :issue="$issue" :event="$currentEvent" :members="$members" />
                 </div>
             </x-card>
 

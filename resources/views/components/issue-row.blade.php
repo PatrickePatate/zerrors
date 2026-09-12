@@ -42,6 +42,12 @@
             :style="`top:${y}px; left:${x}px`"
             class="fixed z-50 w-52 rounded-md border border-gray-200/70 bg-white p-1 text-neutral-700 shadow-lg"
         >
+            <x-dropdown-link :href="route('organizations.issues.show', [$organization, $project, $issue])" @click="menuOpen = false">
+                <x-lucide-eye class="h-3.5 w-3.5" /> View
+            </x-dropdown-link>
+
+            <div class="my-1 border-t border-gray-100"></div>
+
             @if($issue->status !== 'resolved')
                 <button type="button" wire:click="updateIssueStatus({{ $issue->id }}, 'resolved')" @click="menuOpen = false"
                         class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">
@@ -86,14 +92,6 @@
                     </button>
                 @endforeach
             </div>
-
-            <div class="my-1 border-t border-gray-100"></div>
-
-            <a href="{{ route('organizations.issues.show', [$organization, $project, $issue]) }}"
-               class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">
-                <x-lucide-external-link class="h-3.5 w-3.5" />
-                View issue
-            </a>
         </div>
     </template>
 </x-table.row>

@@ -12,6 +12,7 @@ use App\Http\Controllers\Fault\IssueController;
 use App\Http\Controllers\Fault\ReleaseController;
 use App\Http\Controllers\Integrations\GithubAppController;
 use App\Http\Controllers\Integrations\SlackAppController;
+use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\Organization\AuditLogController;
 use App\Http\Controllers\Organization\InviteController;
 use App\Http\Controllers\Organization\MemberController;
@@ -80,6 +81,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project:slug}/issues/{issue}/analyze', [IssueController::class, 'analyze'])->name('organizations.issues.analyze');
         Route::post('/projects/{project:slug}/issues/{issue}/deepen', [IssueController::class, 'deepen'])->name('organizations.issues.deepen');
         Route::post('/projects/{project:slug}/issues/{issue}/github', [IssueController::class, 'createGithubIssue'])->name('organizations.issues.github');
+
+        Route::get('/monitoring', [MonitorController::class, 'index'])->name('organizations.monitors.index');
+        Route::get('/monitoring/create', [MonitorController::class, 'create'])->name('organizations.monitors.create');
+        Route::post('/monitoring', [MonitorController::class, 'store'])->name('organizations.monitors.store');
+        Route::get('/monitoring/{monitor}', [MonitorController::class, 'show'])->name('organizations.monitors.show');
+        Route::get('/monitoring/{monitor}/edit', [MonitorController::class, 'edit'])->name('organizations.monitors.edit');
+        Route::patch('/monitoring/{monitor}', [MonitorController::class, 'update'])->name('organizations.monitors.update');
+        Route::delete('/monitoring/{monitor}', [MonitorController::class, 'destroy'])->name('organizations.monitors.destroy');
 
         Route::get('/members', [MemberController::class, 'index'])->name('organizations.members.index');
         Route::patch('/members/{user}', [MemberController::class, 'updateRole'])->name('organizations.members.updateRole');

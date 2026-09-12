@@ -61,6 +61,11 @@ class FaultProject extends Model
         return $this->hasMany(NotificationChannel::class);
     }
 
+    public function monitors(): HasMany
+    {
+        return $this->hasMany(Monitor::class, 'project_id');
+    }
+
     /**
      * Builds the DSN to give to sentry/sentry-laravel's config/sentry.php.
      * Example: https://<public_key>@yourdomain.com/<project_id>

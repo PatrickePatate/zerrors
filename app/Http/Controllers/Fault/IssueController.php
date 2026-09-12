@@ -9,6 +9,7 @@ use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Support\Ai\IssueAnalyzer;
 use App\Support\Fault\GithubIssueCreator;
+use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use RuntimeException;
@@ -60,13 +61,20 @@ class IssueController extends Controller
         $after = fn () => $issue->events()->where(fn ($q) => $q->where('occurred_at', '>', $current->occurred_at)
             ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '>', $current->id)));
 
+        $counts = $issue->events()
+            ->selectRaw(
+                'count(*) as total, sum(case when occurred_at < ? or (occurred_at = ? and id < ?) then 1 else 0 end) as before_count',
+                [$current->occurred_at, $current->occurred_at, $current->id]
+            )
+            ->first();
+
         return [
             'oldest' => $issue->events()->orderBy('occurred_at')->orderBy('id')->first(),
             'newest' => $issue->events()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
             'previous' => $before()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
             'next' => $after()->orderBy('occurred_at')->orderBy('id')->first(),
-            'position' => $before()->count() + 1,
-            'total' => $issue->events()->count(),
+            'position' => (int) $counts->before_count + 1,
+            'total' => (int) $counts->total,
         ];
     }
 
@@ -77,7 +85,14 @@ class IssueController extends Controller
 
         $data = $request->validate(['status' => ['required', 'in:unresolved,resolved,ignored']]);
 
+        $previousStatus = $issue->status;
+
         $issue->update($data);
+
+        app(AuditLogger::class)->log($organization, $request->user(), 'issue.status_updated', $issue->title, [
+            'from' => $previousStatus,
+            'to' => $issue->status,
+        ]);
 
         return back();
     }

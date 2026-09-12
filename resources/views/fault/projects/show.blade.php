@@ -23,6 +23,11 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
+                <x-button tag="a" href="{{ route('organizations.monitors.index', $organization).'?project='.$project->slug }}" variant="secondary">
+                    <x-lucide-activity class="h-4 w-4" />
+                    Monitoring
+                </x-button>
+
                 <x-modal max-width="lg">
                     <x-slot:trigger>
                         <x-button type="button" variant="secondary">

@@ -12,6 +12,7 @@ use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -22,16 +23,18 @@ class DashboardController extends Controller
 {
     public function overview(Organization $organization): View
     {
-        $projectIds = $organization->projects()->pluck('id');
+        $stats = Cache::remember("organization:{$organization->id}:dashboard-stats", 60, function () use ($organization) {
+            $projectIds = $organization->projects()->pluck('id');
 
-        $since24h = now()->subDay();
+            $since24h = now()->subDay();
 
-        $stats = [
-            'events_24h' => FaultEvent::whereIn('fault_project_id', $projectIds)->where('occurred_at', '>=', $since24h)->count(),
-            'new_issues_24h' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('first_seen_at', '>=', $since24h)->count(),
-            'unresolved_issues' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('status', 'unresolved')->count(),
-            'projects' => $projectIds->count(),
-        ];
+            return [
+                'events_24h' => FaultEvent::whereIn('fault_project_id', $projectIds)->where('occurred_at', '>=', $since24h)->count(),
+                'new_issues_24h' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('first_seen_at', '>=', $since24h)->count(),
+                'unresolved_issues' => FaultIssue::whereIn('fault_project_id', $projectIds)->where('status', 'unresolved')->count(),
+                'projects' => $projectIds->count(),
+            ];
+        });
 
         return view('fault.dashboard.index', [
             'organization' => $organization,

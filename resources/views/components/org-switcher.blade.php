@@ -2,8 +2,8 @@
 
 @php($memberOrgs = auth()->user()->organizations()->orderBy('name')->get())
 
-<div class="border-b border-gray-200 p-3">
-    <x-dropdown class="max-h-64 overflow-y-auto">
+<div class="border-b border-gray-200 p-3 w-full">
+    <x-dropdown match-trigger-width class="max-h-64 overflow-y-auto">
         <x-slot:trigger>
             <button type="button"
                     class="flex w-full items-center justify-between rounded-lg border border-gray-200 px-2.5 py-2 text-sm hover:bg-gray-50">

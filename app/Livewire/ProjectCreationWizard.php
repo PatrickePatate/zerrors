@@ -7,6 +7,7 @@ use App\Enums\NotificationChannelType;
 use App\Enums\NotificationRuleTrigger;
 use App\Models\FaultProject;
 use App\Models\Organization;
+use App\Support\Organization\AuditLogger;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -43,6 +44,10 @@ class ProjectCreationWizard extends Component
         ]);
 
         $this->project = $this->organization->projects()->create($data);
+
+        app(AuditLogger::class)->log($this->organization, auth()->user(), 'project.created', $this->project->name, [
+            'platform' => $this->project->platform->value,
+        ]);
 
         $channel = $this->project->notificationChannels()->create([
             'type' => NotificationChannelType::Email,

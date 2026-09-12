@@ -197,12 +197,42 @@ return [
     */
 
     'defaults' => [
-        'supervisor-1' => [
+        // The high-volume path: one event ingested = one job here. Split into
+        // its own supervisor so a burst of errors gets its own worker pool
+        // instead of competing with (or being starved by) forwarding/default
+        // work, and so it can be scaled independently of everything else.
+        'supervisor-ingest' => [
             'connection' => 'redis',
-            'queue' => ['fault-ingest', 'fault-forward', 'default'],
+            'queue' => ['fault-ingest'],
+            'balance' => 'auto',
+            // Reacts to queue depth rather than wait time, so a sudden spike
+            // of errors scales workers up immediately instead of waiting for
+            // jobs to already be running late.
+            'autoScalingStrategy' => 'size',
+            'minProcesses' => 1,
+            'maxProcesses' => 1,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 60,
+            'nice' => 0,
+        ],
+
+        // Outbound/secondary work (forwarding to an upstream DSN, GitHub/AI
+        // calls, notifications): lower volume and higher per-job latency
+        // (external HTTP calls), so it gets its own smaller pool.
+        'supervisor-default' => [
+            'connection' => 'redis',
+            'queue' => ['fault-forward', 'default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
+            'minProcesses' => 1,
             'maxProcesses' => 1,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
@@ -214,16 +244,22 @@ return [
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
+            'supervisor-ingest' => [
+                'minProcesses' => 3,
+                'maxProcesses' => 30,
+            ],
+            'supervisor-default' => [
+                'minProcesses' => 1,
                 'maxProcesses' => 10,
-                'balanceMaxShift' => 1,
-                'balanceCooldown' => 3,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
+            'supervisor-ingest' => [
                 'maxProcesses' => 3,
+            ],
+            'supervisor-default' => [
+                'maxProcesses' => 2,
             ],
         ],
     ],
