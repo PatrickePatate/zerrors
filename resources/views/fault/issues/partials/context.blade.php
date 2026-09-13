@@ -80,7 +80,20 @@
 
         @if($request)
             <div @class(['sm:col-span-2' => $requestIsLong])>
-                <h3 class="mb-2 text-xs font-medium tracking-wide text-gray-600 uppercase">Request</h3>
+                <div class="mb-2 flex items-center justify-between gap-2">
+                    <h3 class="text-xs font-medium tracking-wide text-gray-600 uppercase">Request</h3>
+
+                    @if($event->hasReproducibleRequest())
+                        <button type="button"
+                                x-data="{ copied: false }"
+                                @click="$clipboard(@js(\App\Support\Fault\CurlCommandFormatter::format($event))); copied = true; clearTimeout($el._copiedTimeout); $el._copiedTimeout = setTimeout(() => copied = false, 1500)"
+                                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-600 transition hover:bg-gray-50 hover:text-gray-900">
+                            <x-lucide-copy-check x-cloak x-show="copied" class="h-3.5 w-3.5 text-emerald-600" />
+                            <x-lucide-terminal x-show="!copied" class="h-3.5 w-3.5" />
+                            <span x-text="copied ? 'Copied!' : 'Copy as curl'"></span>
+                        </button>
+                    @endif
+                </div>
 
                 @if(!empty($request['method']) || !empty($request['url']))
                     <p class="mb-2 break-all text-sm text-gray-700">

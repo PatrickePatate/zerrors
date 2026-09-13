@@ -6,6 +6,7 @@ use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class FaultIssueSeeder extends Seeder
@@ -27,6 +28,8 @@ class FaultIssueSeeder extends Seeder
             ['type' => 'Illuminate\\Validation\\ValidationException', 'message' => 'The email field is required.', 'culprit' => 'RegisterController@store', 'file' => 'app/Http/Controllers/Auth/RegisterController.php'],
             ['type' => 'ErrorException', 'message' => 'Undefined array key "total"', 'culprit' => 'CartService::checkout', 'file' => 'app/Services/CartService.php'],
             ['type' => 'Illuminate\\Http\\Client\\ConnectionException', 'message' => 'cURL error 28: Operation timed out', 'culprit' => 'PaymentGateway::charge', 'file' => 'app/Support/PaymentGateway.php'],
+            ['type' => 'Livewire\\Exceptions\\PropertyNotFoundException', 'message' => 'Property [$selectedIssueId] not found on component', 'culprit' => 'IssueActions::mount', 'file' => 'app/Livewire/IssueActions.php'],
+            ['type' => 'Illuminate\\Queue\\MaxAttemptsExceededException', 'message' => 'App\\Jobs\\ProcessFaultEvent has been attempted too many times', 'culprit' => 'ProcessFaultEvent::handle', 'file' => 'app/Jobs/ProcessFaultEvent.php'],
         ],
         'symfony' => [
             ['type' => 'Symfony\\Component\\Routing\\Exception\\RouteNotFoundException', 'message' => 'Unable to generate a URL for the named route "invoice_show"', 'culprit' => 'InvoiceController::show', 'file' => 'src/Controller/InvoiceController.php'],
@@ -43,6 +46,21 @@ class FaultIssueSeeder extends Seeder
         'other' => [
             ['type' => 'RuntimeException', 'message' => 'Unexpected end of input', 'culprit' => 'Parser::parse', 'file' => 'src/Parser.php'],
         ],
+    ];
+
+    /**
+     * Sample log messages, seeded as issues with no exception (see the "log" item
+     * type in Sentry's structured logs protocol, handled by IngestController::dispatchLogItems()
+     * and rendered via FaultEvent::log_context).
+     *
+     * @var array<int, array{level: string, message: string, context: array<string, string|int>}>
+     */
+    protected const LOG_SAMPLES = [
+        ['level' => 'info', 'message' => 'User logged in', 'context' => ['user_id' => 42, 'ip' => '203.0.113.7']],
+        ['level' => 'info', 'message' => 'Order placed', 'context' => ['order_id' => 'ord_9f2a1c', 'total' => '129.00']],
+        ['level' => 'warning', 'message' => 'Slow query detected', 'context' => ['duration_ms' => 1840, 'connection' => 'mysql']],
+        ['level' => 'warning', 'message' => 'Cache miss rate above threshold', 'context' => ['store' => 'redis', 'miss_rate' => '0.42']],
+        ['level' => 'error', 'message' => 'Failed to send notification email', 'context' => ['channel' => 'mail', 'recipient' => 'user@example.test']],
     ];
 
     protected const LEVELS = ['error', 'error', 'error', 'warning', 'fatal', 'info'];
@@ -158,6 +176,54 @@ class FaultIssueSeeder extends Seeder
                     ]);
                 });
             });
+
+            $this->seedLogIssues($project, $members);
+        });
+    }
+
+    /**
+     * Seed a few log-derived issues (no exception, just a message and
+     * structured context) so the show page's "Log context" panel has
+     * something to render.
+     */
+    protected function seedLogIssues(FaultProject $project, Collection $members): void
+    {
+        collect(range(1, random_int(2, 4)))->each(function () use ($project, $members) {
+            $sample = self::LOG_SAMPLES[array_rand(self::LOG_SAMPLES)];
+            $timesSeen = random_int(1, 200);
+            $firstSeenAt = now()->subDays(random_int(1, 45))->subMinutes(random_int(0, 1440));
+            $lastSeenAt = (clone $firstSeenAt)->addMinutes(random_int(0, max(1, $timesSeen)));
+
+            $issue = FaultIssue::create([
+                'fault_project_id' => $project->id,
+                'fingerprint' => Str::random(20),
+                'type' => null,
+                'title' => $sample['message'],
+                'culprit' => null,
+                'level' => $sample['level'],
+                'status' => self::STATUSES[array_rand(self::STATUSES)],
+                'times_seen' => $timesSeen,
+                'first_seen_at' => $firstSeenAt,
+                'last_seen_at' => $lastSeenAt,
+                'assigned_to_user_id' => random_int(0, 2) === 0 && $members->isNotEmpty()
+                    ? $members->random()->id
+                    : null,
+            ]);
+
+            collect(range(1, min(5, $timesSeen)))->each(function ($i) use ($project, $issue, $sample, $firstSeenAt) {
+                FaultEvent::create([
+                    'fault_project_id' => $project->id,
+                    'fault_issue_id' => $issue->id,
+                    'event_id' => (string) Str::uuid(),
+                    'level' => $issue->level,
+                    'message' => $sample['message'],
+                    'environment' => 'production',
+                    'server_name' => 'web-'.random_int(1, 4).'.prod.internal',
+                    'log_context' => $sample['context'],
+                    'payload' => ['message' => $sample['message'], 'log_context' => $sample['context']],
+                    'occurred_at' => (clone $firstSeenAt)->addMinutes($i * random_int(5, 240)),
+                ]);
+            });
         });
     }
 
@@ -182,6 +248,22 @@ class FaultIssueSeeder extends Seeder
      */
     protected function buildRequestPayload(array $sample): array
     {
+        if (Str::startsWith($sample['file'], 'app/Jobs/')) {
+            return [];
+        }
+
+        if (Str::startsWith($sample['file'], 'app/Livewire/')) {
+            return [
+                'method' => 'POST',
+                'url' => 'https://example.test/livewire/update',
+                'headers' => [
+                    'User-Agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
+                    'Accept' => 'application/json',
+                    'Host' => 'example.test',
+                ],
+            ];
+        }
+
         $method = Str::contains($sample['culprit'], ['store', 'create', 'charge', 'save']) ? 'POST' : 'GET';
         $path = '/'.Str::slug(Str::before($sample['culprit'], '@') ?: Str::before($sample['culprit'], '::'));
 
@@ -232,17 +314,34 @@ class FaultIssueSeeder extends Seeder
      */
     protected function buildExceptionPayload(array $sample): array
     {
+        $isLivewire = Str::startsWith($sample['file'], 'app/Livewire/');
+        $isQueueJob = Str::startsWith($sample['file'], 'app/Jobs/');
+
         return [[
             'type' => $sample['type'],
             'value' => $sample['message'],
             'stacktrace' => [
                 'frames' => [
-                    [
-                        'filename' => 'vendor/laravel/framework/src/Illuminate/Routing/Router.php',
-                        'lineno' => 806,
-                        'function' => 'dispatch',
-                        'in_app' => false,
-                    ],
+                    match (true) {
+                        $isLivewire => [
+                            'filename' => 'vendor/livewire/livewire/src/Mechanisms/HandleComponents/HandleComponents.php',
+                            'lineno' => 214,
+                            'function' => 'callMethod',
+                            'in_app' => false,
+                        ],
+                        $isQueueJob => [
+                            'filename' => 'vendor/laravel/framework/src/Illuminate/Queue/CallQueuedHandler.php',
+                            'lineno' => 124,
+                            'function' => 'call',
+                            'in_app' => false,
+                        ],
+                        default => [
+                            'filename' => 'vendor/laravel/framework/src/Illuminate/Routing/Router.php',
+                            'lineno' => 806,
+                            'function' => 'dispatch',
+                            'in_app' => false,
+                        ],
+                    },
                     [
                         'filename' => $sample['file'],
                         'lineno' => $lineNo = random_int(15, 220),

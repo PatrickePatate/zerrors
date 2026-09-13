@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class FaultIssue extends Model
 {
@@ -39,9 +40,29 @@ class FaultIssue extends Model
         return $this->hasMany(FaultEvent::class);
     }
 
+    /**
+     * The most recent event, for surfacing per-event details (Livewire/queue/bot
+     * detection) on the issue without loading the full event history. Safe to
+     * eager-load with a column-limited constraint to avoid an N+1 on issue lists.
+     */
+    public function latestEvent(): HasOne
+    {
+        return $this->hasOne(FaultEvent::class)->latestOfMany('occurred_at');
+    }
+
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    /**
+     * Whether this issue was derived from a log entry rather than a captured
+     * exception (see IngestController::dispatchLogItems() and ProcessFaultEvent,
+     * which leave `type` null for log-only issues).
+     */
+    public function isLog(): bool
+    {
+        return $this->type === null;
     }
 
     /**

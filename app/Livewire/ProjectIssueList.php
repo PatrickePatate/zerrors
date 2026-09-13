@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\FaultEvent;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use Livewire\Attributes\Url;
@@ -63,7 +64,7 @@ class ProjectIssueList extends Component
     public function render()
     {
         $issues = $this->project->issues()
-            ->with('assignee')
+            ->with(['assignee', 'latestEvent:'.FaultEvent::BADGE_COLUMNS])
             ->when($this->search !== '', fn ($q) => $q->where(fn ($q) => $q
                 ->where('title', 'like', "%{$this->search}%")
                 ->orWhere('culprit', 'like', "%{$this->search}%")

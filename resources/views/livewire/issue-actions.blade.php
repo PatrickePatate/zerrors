@@ -32,10 +32,10 @@
             <span class="text-sm text-gray-500">Assigned to</span>
             <div class="w-40">
                 <x-form.select id="assignedToUserId" wire:model.live="assignedToUserId"
-                                :options="['' => 'Unassigned'] + $members->pluck('name', 'id')->all()"
-                                :images="$members->mapWithKeys(fn ($member) => [$member->id => $member->avatarUrl()])->all()"
-                                :selected="$assignedToUserId"
-                                :error="$errors->first('assignedToUserId')" />
+                               :options="['' => 'Unassigned'] + $members->pluck('name', 'id')->all()"
+                               :images="$members->mapWithKeys(fn ($member) => [$member->id => $member->avatarUrl()])->all()"
+                               :selected="$assignedToUserId"
+                               :error="$errors->first('assignedToUserId')" />
             </div>
         </div>
     </div>
@@ -44,16 +44,16 @@
         <p class="mt-3 text-sm text-red-600">{{ $githubError }}</p>
     @endif
 
-    <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-        @if($project->hasGithubConfigured() && $linkedRelease && ! $linkedRelease->commit_message)
+    @if($project->hasGithubConfigured() && $linkedRelease && ! $linkedRelease->commit_message)
+        <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
             <button type="button" wire:click="fetchCommit" wire:loading.attr="disabled"
                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50">
                 <x-lucide-git-commit-horizontal class="h-4 w-4" />
                 <span wire:loading.remove wire:target="fetchCommit">Fetch linked commit</span>
                 <span wire:loading wire:target="fetchCommit">Fetching&hellip;</span>
             </button>
-        @endif
-    </div>
+        </div>
+    @endif
 
     @if($event)
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-gray-500">
