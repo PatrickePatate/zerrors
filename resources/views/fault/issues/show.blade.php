@@ -4,7 +4,6 @@
 
 @php
     $levelColors = ['error' => 'red', 'warning' => 'amber', 'fatal' => 'red', 'info' => 'blue'];
-    $statusColors = ['unresolved' => 'red', 'resolved' => 'green', 'ignored' => 'gray'];
 @endphp
 
 @section('content')
@@ -15,7 +14,7 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
             <x-card>
-                <x-badge :color="$statusColors[$issue->status] ?? 'gray'" class="-ms-0.5 mb-1.5">{{ ucfirst($issue->status) }}</x-badge>
+                <livewire:issue-status-badge :issue="$issue" />
                 <h1 class="flex flex-wrap items-center gap-2 text-lg font-semibold text-gray-900">
                     {{ $issue->title }}
                 </h1>
@@ -27,6 +26,20 @@
                 <div class="mt-3 mb-2 flex flex-wrap items-center gap-2">
                     <x-badge :color="$levelColors[$issue->level] ?? 'gray'">{{ ucfirst($issue->level) }}</x-badge>
                     <x-badge :color="$environment === 'production' ? 'amber' : 'gray'">{{$environment}}</x-badge>
+                    @if($livewireComponent = $currentEvent?->livewireComponent())
+                        <x-tooltip message="<b>Livewire error:</b> {{ $livewireComponent }}">
+                            <x-badge color="indigo">
+                                <x-icon-livewire class="mr-1 -ms-0.5 inline h-3 w-3" />{{ class_basename($livewireComponent) }}
+                            </x-badge>
+                        </x-tooltip>
+                    @endif
+                    @if($currentEvent?->isQueuedJob())
+                        <x-tooltip message="<b>Queue job:</b> {{ $currentEvent->queueJob() ?? 'unknown job class' }}">
+                            <x-badge color="indigo">
+                                <x-lucide-list-todo class="mr-1 -ms-0.5 inline h-3 w-3" />{{ $currentEvent->queueJob() ? class_basename($currentEvent->queueJob()) : 'Queue' }}
+                            </x-badge>
+                        </x-tooltip>
+                    @endif
                     <div class="text-sm text-gray-400">
                         <b>{{ $issue->times_seen }}</b> events
                     </div>

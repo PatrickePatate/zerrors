@@ -17,7 +17,12 @@
 >
     <x-table.cell><x-badge :color="$statusColors[$issue->status] ?? 'gray'">{{ ucfirst($issue->status) }}</x-badge></x-table.cell>
     <x-table.cell>
-        <a href="{{ route('organizations.issues.show', [$organization, $project, $issue]) }}" class="font-medium text-gray-900 hover:underline">{{ $issue->title }}</a>
+        <div class="flex flex-wrap items-center gap-1.5">
+            <x-issue-type-badges :issue="$issue" />
+            <a href="{{ route('organizations.issues.show', [$organization, $project, $issue]) }}" class="font-medium text-gray-900 hover:underline">
+                {{ $issue->title }}
+            </a>
+        </div>
         <p class="text-xs text-gray-400">{{ $issue->culprit }}</p>
     </x-table.cell>
     @if($showProject)

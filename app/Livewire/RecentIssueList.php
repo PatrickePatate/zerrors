@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\Organization;
 use Livewire\Component;
@@ -44,7 +45,7 @@ class RecentIssueList extends Component
     public function render()
     {
         $issues = $this->issueQuery()
-            ->with(['project', 'assignee'])
+            ->with(['project', 'assignee', 'latestEvent:'.FaultEvent::BADGE_COLUMNS])
             ->orderByDesc('last_seen_at')
             ->limit($this->limit)
             ->get();

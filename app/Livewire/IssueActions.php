@@ -55,6 +55,8 @@ class IssueActions extends Component
             'from' => $previousStatus,
             'to' => $status,
         ]);
+
+        $this->dispatch('issue-status-updated', issueId: $this->issue->id);
     }
 
     public function updatedAssignedToUserId(?string $value): void
