@@ -3,6 +3,19 @@ import ApexCharts from 'apexcharts';
 // Backs the response-time area chart on the monitor detail page
 // (resources/views/livewire/monitor-detail.blade.php). Colors mirror
 // App\Enums\MonitorStatus::color() — green for up, red for down.
+
+// Phase breakdown shown in the tooltip, in the order a request actually
+// happens. Each check only carries the phases that apply to it (e.g.
+// ssl_time_ms stays null for a plain HTTP target), so the tooltip skips
+// whatever's missing rather than showing a stray "0ms" line.
+const PHASES = [
+    { key: 'dns_time_ms', label: 'DNS Lookup time', color: '#ec4899' },
+    { key: 'connect_time_ms', label: 'TCP Connection time', color: '#14b8a6' },
+    { key: 'ssl_time_ms', label: 'SSL Handshake', color: '#a855f7' },
+    { key: 'ttfb_ms', label: 'Remote server processing', color: '#3b82f6' },
+    { key: 'download_time_ms', label: 'Content download', color: '#f59e0b' },
+];
+
 export default function monitorChart(checks) {
     return {
         chart: null,
@@ -18,6 +31,11 @@ export default function monitorChart(checks) {
                 x: new Date(check.checked_at).getTime(),
                 y: check.response_time_ms,
                 status: check.status,
+                phases: PHASES.filter((phase) => check[phase.key] !== null && check[phase.key] !== undefined).map((phase) => ({
+                    label: phase.label,
+                    color: phase.color,
+                    value: check[phase.key],
+                })),
             }));
 
             this.chart = new ApexCharts(this.$el, {
@@ -45,7 +63,35 @@ export default function monitorChart(checks) {
                     labels: { formatter: (value) => (value === null ? '—' : Math.round(value)) },
                 },
                 tooltip: {
-                    y: { formatter: (value) => (value === null ? 'no response' : `${Math.round(value)} ms`) },
+                    custom: ({ seriesIndex, dataPointIndex, w }) => {
+                        const point = w.config.series[seriesIndex].data[dataPointIndex];
+                        const date = new Date(point.x).toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                        });
+
+                        if (point.y === null) {
+                            return `<div class="p-3 text-sm">
+                                <div class="font-semibold mb-1">${date}</div>
+                                <div>No response</div>
+                            </div>`;
+                        }
+
+                        const phaseRows = point.phases
+                            .map(
+                                (phase) => `<div class="flex items-center gap-1.5">
+                                    <span class="inline-block w-2 h-2 rounded-full" style="background-color: ${phase.color}"></span>
+                                    <span>${phase.label}: ${Math.round(phase.value)}ms</span>
+                                </div>`
+                            )
+                            .join('');
+
+                        return `<div class="p-3 text-sm space-y-1">
+                            <div class="font-semibold mb-1">${date}</div>
+                            <div>Total: ${Math.round(point.y)}ms</div>
+                            ${phaseRows}
+                        </div>`;
+                    },
                 },
                 noData: { text: 'No checks recorded yet.' },
             });

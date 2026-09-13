@@ -7,6 +7,7 @@ use App\Enums\MonitorStatus;
 use App\Enums\MonitorType;
 use App\Models\Monitor;
 use App\Models\MonitorCheck;
+use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\Process\Process;
@@ -36,9 +37,10 @@ class MonitorCheckRunner
     protected function runHttp(Monitor $monitor): array
     {
         $start = microtime(true);
+        $timing = $this->emptyTiming();
 
         try {
-            $response = $this->sendRequest($monitor);
+            $response = $this->sendRequest($monitor, $timing);
             $elapsedMs = (int) round((microtime(true) - $start) * 1000);
 
             $expected = $monitor->expected_status_code ?? 200;
@@ -47,6 +49,7 @@ class MonitorCheckRunner
             return $this->applyCertificateCheck($monitor, [
                 'status' => $up ? MonitorStatus::Up : MonitorStatus::Down,
                 'response_time_ms' => $elapsedMs,
+                ...$timing,
                 'status_code' => $response->status(),
                 'error_message' => $up ? null : "Expected status {$expected}, got {$response->status()}.",
                 'health_checks' => null,
@@ -55,6 +58,7 @@ class MonitorCheckRunner
             return [
                 'status' => MonitorStatus::Down,
                 'response_time_ms' => null,
+                ...$this->emptyTiming(),
                 'status_code' => null,
                 'error_message' => $e->getMessage(),
                 'health_checks' => null,
@@ -64,11 +68,26 @@ class MonitorCheckRunner
         }
     }
 
-    protected function sendRequest(Monitor $monitor): Response
+    /**
+     * @param  array<string, int|null>  $timing  Filled in by reference from the
+     *                                           underlying curl handler's stats.
+     */
+    protected function sendRequest(Monitor $monitor, array &$timing = []): Response
     {
+        $timing = $this->emptyTiming();
+
         $request = Http::timeout($monitor->timeout_seconds)
             ->withUserAgent('Zerrors (+uptime)')
             ->withHeaders($monitor->headers ?? [])
+            // Guzzle's "on_stats" option exposes the underlying curl handler's
+            // transfer stats after each attempt completes, which is where the
+            // DNS/connect/SSL/TTFB breakdown comes from — Laravel's HTTP client
+            // has no higher-level API for these phases.
+            ->withOptions([
+                'on_stats' => function (TransferStats $stats) use (&$timing) {
+                    $timing = $this->extractTiming($stats);
+                },
+            ])
             // A single retry after a short delay absorbs a transient blip on the
             // target (a mid-deploy config reload, a brief WAF hiccup, a restarting
             // app server) rather than flipping the monitor down — and reporting
@@ -82,6 +101,55 @@ class MonitorCheckRunner
             MonitorHttpMethod::Post => $request->post($monitor->url),
             default => $request->get($monitor->url),
         };
+    }
+
+    /**
+     * @return array<string, int|null>
+     */
+    protected function emptyTiming(): array
+    {
+        return [
+            'dns_time_ms' => null,
+            'connect_time_ms' => null,
+            'ssl_time_ms' => null,
+            'ttfb_ms' => null,
+            'download_time_ms' => null,
+        ];
+    }
+
+    /**
+     * Turns curl's cumulative timing phases (each measured from the start of
+     * the transfer) into the discrete, non-overlapping durations shown on the
+     * monitor detail chart.
+     *
+     * @return array<string, int|null>
+     */
+    protected function extractTiming(TransferStats $stats): array
+    {
+        $handlerStats = $stats->getHandlerStats();
+
+        if (empty($handlerStats)) {
+            return $this->emptyTiming();
+        }
+
+        $toMs = fn (float $seconds): int => (int) round($seconds * 1000);
+
+        $namelookup = (float) ($handlerStats['namelookup_time'] ?? 0);
+        $connect = (float) ($handlerStats['connect_time'] ?? 0);
+        $appconnect = (float) ($handlerStats['appconnect_time'] ?? 0);
+        $startTransfer = (float) ($handlerStats['starttransfer_time'] ?? 0);
+        $total = (float) ($handlerStats['total_time'] ?? 0);
+
+        // appconnect_time stays 0 for a plain HTTP request (no TLS handshake).
+        $preTransfer = $appconnect > 0 ? $appconnect : $connect;
+
+        return [
+            'dns_time_ms' => $toMs($namelookup),
+            'connect_time_ms' => $toMs(max(0, $connect - $namelookup)),
+            'ssl_time_ms' => $appconnect > 0 ? $toMs(max(0, $appconnect - $connect)) : null,
+            'ttfb_ms' => $toMs(max(0, $startTransfer - $preTransfer)),
+            'download_time_ms' => $toMs(max(0, $total - $startTransfer)),
+        ];
     }
 
     /**
@@ -148,9 +216,10 @@ class MonitorCheckRunner
     protected function runLaravelHealth(Monitor $monitor): array
     {
         $start = microtime(true);
+        $timing = $this->emptyTiming();
 
         try {
-            $response = $this->sendRequest($monitor);
+            $response = $this->sendRequest($monitor, $timing);
             $elapsedMs = (int) round((microtime(true) - $start) * 1000);
 
             $expected = $monitor->expected_status_code ?? 200;
@@ -188,6 +257,7 @@ class MonitorCheckRunner
             return $this->applyCertificateCheck($monitor, [
                 'status' => $up ? MonitorStatus::Up : MonitorStatus::Down,
                 'response_time_ms' => $elapsedMs,
+                ...$timing,
                 'status_code' => $response->status(),
                 'error_message' => $errorMessage,
                 'health_checks' => $checkResults,
@@ -196,6 +266,7 @@ class MonitorCheckRunner
             return [
                 'status' => MonitorStatus::Down,
                 'response_time_ms' => null,
+                ...$this->emptyTiming(),
                 'status_code' => null,
                 'error_message' => $e->getMessage(),
                 'health_checks' => null,
