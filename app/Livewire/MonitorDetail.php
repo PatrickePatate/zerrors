@@ -32,6 +32,11 @@ class MonitorDetail extends Component
         $chartChecks = $checks->map(fn ($check) => [
             'checked_at' => $check->checked_at->toIso8601String(),
             'response_time_ms' => $check->response_time_ms,
+            'dns_time_ms' => $check->dns_time_ms,
+            'connect_time_ms' => $check->connect_time_ms,
+            'ssl_time_ms' => $check->ssl_time_ms,
+            'ttfb_ms' => $check->ttfb_ms,
+            'download_time_ms' => $check->download_time_ms,
             'status' => $check->status->value,
         ]);
 
