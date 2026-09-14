@@ -59,6 +59,16 @@ class FaultEvent extends Model
     }
 
     /**
+     * Whether the exception was caught and reported by an error handler
+     * (true), crashed the process uncaught (false), or the SDK didn't report
+     * it (null), per Sentry's mechanism.handled flag on the first exception value.
+     */
+    public function handled(): ?bool
+    {
+        return $this->exception['values'][0]['mechanism']['handled'] ?? null;
+    }
+
+    /**
      * The FQCN of the Livewire component the exception was thrown in, detected by
      * walking the stack frames for the first one that looks like a component: either
      * a file under app/Livewire, or a frame whose function is reported as "Class::method"

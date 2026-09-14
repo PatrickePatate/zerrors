@@ -84,7 +84,7 @@ class ProjectCreationWizard extends Component
         return match ($this->project?->platform) {
             FaultPlatform::Laravel => [
                 ['description' => 'Install the Sentry SDK for Laravel.', 'code' => 'composer require sentry/sentry-laravel'],
-                ['description' => 'Publish the Sentry config file.', 'code' => 'php artisan sentry:publish-config'],
+                ['description' => 'Publish the Sentry config file.', 'code' => 'php artisan sentry:publish'],
                 ['description' => 'Add the DSN to your .env file.', 'code' => "SENTRY_LARAVEL_DSN={$dsn}"],
             ],
             FaultPlatform::Symfony => [

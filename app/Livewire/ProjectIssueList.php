@@ -29,6 +29,9 @@ class ProjectIssueList extends Component
     #[Url(history: true)]
     public string $assigned = '';
 
+    #[Url(history: true)]
+    public string $handled = '';
+
     public function mount(Organization $organization, FaultProject $project): void
     {
         $this->organization = $organization;
@@ -42,7 +45,7 @@ class ProjectIssueList extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'level', 'status', 'assigned');
+        $this->reset('search', 'level', 'status', 'assigned', 'handled');
     }
 
     public function updateIssueStatus(int $issueId, string $status): void
@@ -74,6 +77,10 @@ class ProjectIssueList extends Component
             ->when($this->status !== '', fn ($q) => $q->where('status', $this->status))
             ->when($this->assigned === 'me', fn ($q) => $q->where('assigned_to_user_id', auth()->id()))
             ->when($this->assigned === 'unassigned', fn ($q) => $q->whereNull('assigned_to_user_id'))
+            ->when($this->handled !== '', fn ($q) => $q->whereHas(
+                'latestEvent',
+                fn ($q) => $q->where('exception->values[0]->mechanism->handled', $this->handled === 'handled')
+            ))
             ->orderByDesc('last_seen_at')
             ->paginate(25);
 

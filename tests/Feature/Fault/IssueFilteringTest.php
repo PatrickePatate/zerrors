@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fault;
 
+use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
@@ -62,5 +63,33 @@ class IssueFilteringTest extends TestCase
         );
 
         $response->assertOk()->assertSeeText('FreeOne')->assertDontSeeText('AssignedOne');
+    }
+
+    public function test_issues_can_be_filtered_by_handled_status(): void
+    {
+        $organization = Organization::factory()->create();
+        $user = User::factory()->create();
+        $organization->users()->attach($user->id, ['role' => 'member']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+
+        $handledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'HandledOne']);
+        FaultEvent::factory()->create([
+            'fault_project_id' => $project->id,
+            'fault_issue_id' => $handledIssue->id,
+            'exception' => ['values' => [['mechanism' => ['handled' => true]]]],
+        ]);
+
+        $unhandledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'UnhandledOne']);
+        FaultEvent::factory()->create([
+            'fault_project_id' => $project->id,
+            'fault_issue_id' => $unhandledIssue->id,
+            'exception' => ['values' => [['mechanism' => ['handled' => false]]]],
+        ]);
+
+        $response = $this->actingAs($user)->get(
+            route('organizations.projects.show', [$organization, $project]).'?handled=unhandled'
+        );
+
+        $response->assertOk()->assertSeeText('UnhandledOne')->assertDontSeeText('HandledOne');
     }
 }
