@@ -28,11 +28,11 @@ class AppServiceProvider extends ServiceProvider
         // Keyed per project (not per IP): a project's SDK instances may share
         // or rotate IPs, but every event carries the project id (ingest routes)
         // or public key (the GitHub webhook route) in the URL.
-        RateLimiter::for('fault-ingest', fn (Request $request) => Limit::perMinute(300)->by(
+        RateLimiter::for('fault-ingest', fn (Request $request) => Limit::perMinute(config('fault.ingest_rate_limit'))->by(
             $request->route('projectId') ?? $request->route('publicKey')
         ));
 
-        if($this->app->environment('production') && config('octane.server')) {
+        if ($this->app->environment('production') && config('octane.server')) {
             \URL::forceScheme('https');
         }
 

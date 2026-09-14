@@ -246,7 +246,7 @@ return [
         'production' => [
             'supervisor-ingest' => [
                 'minProcesses' => 3,
-                'maxProcesses' => 30,
+                'maxProcesses' => env('FAULT_INGEST_MAX_PROCESSES', 30),
             ],
             'supervisor-default' => [
                 'minProcesses' => 1,
