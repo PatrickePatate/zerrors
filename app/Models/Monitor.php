@@ -52,21 +52,41 @@ class Monitor extends Model
         return $this->hasMany(MonitorCheck::class);
     }
 
+    public function dailyStats(): HasMany
+    {
+        return $this->hasMany(MonitorDailyStat::class);
+    }
+
     /**
-     * Percentage of checks in the trailing $hours window that were Up.
+     * Percentage of checks in the trailing $hours window that were Up,
+     * blending raw checks with compacted daily stats for any part of the
+     * window that has already been rolled up (see CompactMonitorChecks).
      */
     public function uptimePercentage(int $hours): float
     {
+        $since = now()->subHours($hours);
+
         $counts = $this->checks()
-            ->where('checked_at', '>=', now()->subHours($hours))
+            ->where('checked_at', '>=', $since)
             ->selectRaw('count(*) as total, sum(case when status = ? then 1 else 0 end) as up_count', [MonitorStatus::Up->value])
             ->first();
 
-        if (! $counts || (int) $counts->total === 0) {
+        $total = (int) ($counts->total ?? 0);
+        $upCount = (int) ($counts->up_count ?? 0);
+
+        $dailyStats = $this->dailyStats()
+            ->where('date', '>=', $since->toDateString())
+            ->selectRaw('sum(total_checks) as total, sum(up_count) as up_count')
+            ->first();
+
+        $total += (int) ($dailyStats->total ?? 0);
+        $upCount += (int) ($dailyStats->up_count ?? 0);
+
+        if ($total === 0) {
             return 0.0;
         }
 
-        return round(((int) $counts->up_count / (int) $counts->total) * 100, 2);
+        return round(($upCount / $total) * 100, 2);
     }
 
     /**

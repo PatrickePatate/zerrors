@@ -3,6 +3,7 @@ import collapse from '@alpinejs/collapse';
 import Clipboard from '@ryangjchandler/alpine-clipboard';
 import Prism from 'prismjs';
 import monitorChart from './monitor-chart';
+import datePicker from './date-picker';
 
 // window.livewireScriptConfig is set inline in the layout <head> (before this
 // module loads) with the CSRF token + update endpoint URI that Livewire's
@@ -15,6 +16,9 @@ document.addEventListener('alpine:init', () => {
 
     // Backs the response-time chart on the monitor detail page.
     Alpine.data('monitorChart', monitorChart);
+
+    // Backs the <x-form.date-picker> component.
+    Alpine.data('datePicker', datePicker);
 
     // Backs the <x-form.select> component: a Pines-style custom dropdown
     // that stays wireable by mirroring its value onto a hidden native
