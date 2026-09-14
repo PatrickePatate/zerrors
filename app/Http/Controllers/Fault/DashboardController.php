@@ -123,6 +123,33 @@ class DashboardController extends Controller
         return back()->with('status', 'Forwarding settings updated.');
     }
 
+    public function updateCensorship(Request $request, Organization $organization, FaultProject $project)
+    {
+        abort_unless($project->organization_id === $organization->id, 404);
+        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+
+        if ($request->boolean('reset')) {
+            $project->update(['censored_headers' => null]);
+
+            return back()->with('status', 'Censorship settings reset to the default header list.');
+        }
+
+        $data = $request->validate([
+            'censored_headers' => ['nullable', 'string'],
+        ]);
+
+        $headers = collect(preg_split('/[\r\n,]+/', $data['censored_headers'] ?? ''))
+            ->map(fn (string $header) => trim($header))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $project->update(['censored_headers' => $headers]);
+
+        return back()->with('status', 'Censorship settings updated.');
+    }
+
     /**
      * Move a project to another organization the user owns.
      */

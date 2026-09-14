@@ -12,6 +12,7 @@ class StacktraceExceptionValue
         public readonly ?string $message,
         public readonly array $frames,
         public readonly int $importantFrameIndex,
+        public readonly ?bool $handled,
     ) {}
 
     /**
@@ -31,6 +32,7 @@ class StacktraceExceptionValue
             message: $value['value'] ?? null,
             frames: $frames,
             importantFrameIndex: $importantIndex,
+            handled: $value['mechanism']['handled'] ?? null,
         );
     }
 

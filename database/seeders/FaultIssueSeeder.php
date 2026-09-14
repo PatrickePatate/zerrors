@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
+use App\Support\Fault\EventPayloadCensor;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -168,7 +169,7 @@ class FaultIssueSeeder extends Seeder
                         'environment' => 'production',
                         'server_name' => 'web-'.random_int(1, 4).'.prod.internal',
                         'exception' => ['values' => $values = $this->buildExceptionPayload($sample)],
-                        'request' => $this->buildRequestPayload($sample),
+                        'request' => $this->buildRequestPayload($project, $sample),
                         'contexts' => $this->buildContextsPayload($project),
                         'extra' => $this->buildExtraPayload(),
                         'payload' => ['message' => $sample['message'], 'exception' => ['values' => $values], 'user' => $user],
@@ -243,40 +244,62 @@ class FaultIssueSeeder extends Seeder
     }
 
     /**
+     * Builds a realistic set of request headers, occasionally including
+     * sensitive ones (Authorization, Cookie) so seeded events exercise the
+     * project's censorship settings the same way real traffic would.
+     *
+     * @return array<string, string>
+     */
+    protected function buildRequestHeaders(): array
+    {
+        $headers = [
+            'User-Agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
+            'Accept' => 'application/json',
+            'Host' => 'example.test',
+        ];
+
+        if (random_int(1, 100) <= 50) {
+            $headers['Authorization'] = 'Bearer '.Str::random(40);
+        }
+
+        if (random_int(1, 100) <= 50) {
+            $headers['Cookie'] = 'zerrors_session='.Str::random(32);
+        }
+
+        return $headers;
+    }
+
+    /**
      * @param  array{type: string, message: string, culprit: string, file: string}  $sample
      * @return array{method: string, url: string, query_string?: string, headers: array<string, string>}
      */
-    protected function buildRequestPayload(array $sample): array
+    protected function buildRequestPayload(FaultProject $project, array $sample): array
     {
         if (Str::startsWith($sample['file'], 'app/Jobs/')) {
             return [];
         }
 
         if (Str::startsWith($sample['file'], 'app/Livewire/')) {
-            return [
+            $request = [
                 'method' => 'POST',
                 'url' => 'https://example.test/livewire/update',
-                'headers' => [
-                    'User-Agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
-                    'Accept' => 'application/json',
-                    'Host' => 'example.test',
-                ],
+                'headers' => $this->buildRequestHeaders(),
             ];
+
+            return EventPayloadCensor::redact(['request' => $request], $project->censoredHeaders())['request'];
         }
 
         $method = Str::contains($sample['culprit'], ['store', 'create', 'charge', 'save']) ? 'POST' : 'GET';
         $path = '/'.Str::slug(Str::before($sample['culprit'], '@') ?: Str::before($sample['culprit'], '::'));
 
-        return array_filter([
+        $request = array_filter([
             'method' => $method,
             'url' => 'https://example.test'.$path,
             'query_string' => $method === 'GET' ? 'page='.random_int(1, 5) : null,
-            'headers' => [
-                'User-Agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
-                'Accept' => 'application/json',
-                'Host' => 'example.test',
-            ],
+            'headers' => $this->buildRequestHeaders(),
         ], fn ($value) => $value !== null);
+
+        return EventPayloadCensor::redact(['request' => $request], $project->censoredHeaders())['request'];
     }
 
     /**
@@ -310,7 +333,7 @@ class FaultIssueSeeder extends Seeder
 
     /**
      * @param  array{type: string, message: string, culprit: string, file: string}  $sample
-     * @return array<int, array{type: string, value: string, stacktrace: array{frames: array<int, array<string, mixed>>}}>
+     * @return array<int, array{type: string, value: string, mechanism: array{handled: bool}, stacktrace: array{frames: array<int, array<string, mixed>>}}>
      */
     protected function buildExceptionPayload(array $sample): array
     {
@@ -320,6 +343,9 @@ class FaultIssueSeeder extends Seeder
         return [[
             'type' => $sample['type'],
             'value' => $sample['message'],
+            'mechanism' => [
+                'handled' => random_int(1, 100) <= 70,
+            ],
             'stacktrace' => [
                 'frames' => [
                     match (true) {

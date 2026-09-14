@@ -111,6 +111,64 @@ class IngestTest extends TestCase
         $this->assertSame(3, FaultIssue::first()->times_seen);
     }
 
+    public function test_default_censored_headers_are_redacted_from_the_stored_event(): void
+    {
+        $project = FaultProject::factory()->create(['censored_headers' => null]);
+
+        $payload = [
+            'event_id' => str_repeat('a', 32),
+            'level' => 'error',
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+            'request' => [
+                'url' => 'https://example.test/foo',
+                'headers' => [
+                    'authorization' => 'Bearer secret-token',
+                    'cookie' => 'session=abc123',
+                    'user-agent' => 'Mozilla/5.0',
+                ],
+            ],
+        ];
+
+        $this->call(
+            'POST',
+            "/api/{$project->id}/store/?sentry_key={$project->public_key}",
+            content: json_encode($payload),
+        );
+
+        $event = FaultEvent::first();
+        $this->assertSame('<CENSORED>', $event->request['headers']['authorization']);
+        $this->assertSame('<CENSORED>', $event->request['headers']['cookie']);
+        $this->assertSame('Mozilla/5.0', $event->request['headers']['user-agent']);
+        $this->assertSame('<CENSORED>', $event->payload['request']['headers']['authorization']);
+    }
+
+    public function test_a_custom_censored_header_list_is_used_instead_of_the_default(): void
+    {
+        $project = FaultProject::factory()->create(['censored_headers' => ['X-Api-Token']]);
+
+        $payload = [
+            'event_id' => str_repeat('b', 32),
+            'level' => 'error',
+            'exception' => ['values' => [['type' => 'RuntimeException', 'value' => 'boom']]],
+            'request' => [
+                'headers' => [
+                    'authorization' => 'Bearer secret-token',
+                    'x-api-token' => 'super-secret',
+                ],
+            ],
+        ];
+
+        $this->call(
+            'POST',
+            "/api/{$project->id}/store/?sentry_key={$project->public_key}",
+            content: json_encode($payload),
+        );
+
+        $event = FaultEvent::first();
+        $this->assertSame('Bearer secret-token', $event->request['headers']['authorization']);
+        $this->assertSame('<CENSORED>', $event->request['headers']['x-api-token']);
+    }
+
     public function test_store_endpoint_captures_log_context_for_a_log_style_payload(): void
     {
         $project = FaultProject::factory()->create();

@@ -15,16 +15,32 @@ class FaultProject extends Model
     /** @use HasFactory<FaultProjectFactory> */
     use HasFactory;
 
+    /**
+     * Header names redacted from incoming event data when a project has no
+     * custom `censored_headers` list of its own.
+     *
+     * @var list<string>
+     */
+    public const DEFAULT_CENSORED_HEADERS = [
+        'API-KEY',
+        'Authorization',
+        'Cookie',
+        'Set-Cookie',
+        'X-CSRF-TOKEN',
+        'X-XSRF-TOKEN',
+    ];
+
     protected $fillable = [
         'organization_id', 'name', 'slug', 'platform', 'public_key', 'secret_key',
         'retention_days', 'github_repo', 'production_branch',
-        'forward_enabled', 'forward_dsn',
+        'forward_enabled', 'forward_dsn', 'censored_headers',
     ];
 
     protected $casts = [
         'platform' => FaultPlatform::class,
         'forward_enabled' => 'boolean',
         'forward_dsn' => 'encrypted',
+        'censored_headers' => 'array',
     ];
 
     protected static function booted(): void
@@ -85,5 +101,16 @@ class FaultProject extends Model
     public function isForwardingConfigured(): bool
     {
         return $this->forward_enabled && ! empty($this->forward_dsn);
+    }
+
+    /**
+     * The header names to redact from incoming event data. Null means the
+     * project hasn't customized the list, so it falls back to the default.
+     *
+     * @return list<string>
+     */
+    public function censoredHeaders(): array
+    {
+        return $this->censored_headers ?? self::DEFAULT_CENSORED_HEADERS;
     }
 }

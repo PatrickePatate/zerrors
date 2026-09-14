@@ -90,7 +90,7 @@
 
                 @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
                     <x-modal
-                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('production_branch') || $errors->has('forward_dsn')"
+                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('production_branch') || $errors->has('forward_dsn') || $errors->has('censored_headers')"
                         max-width="lg"
                     >
                         <x-slot:trigger>
@@ -108,6 +108,9 @@
                                 <button type="button" @click="tab = 'forwarding'"
                                         :class="tab === 'forwarding' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
                                         class="border-b-2 px-3 pb-2 text-sm font-medium">Forwarding</button>
+                                <button type="button" @click="tab = 'censorship'"
+                                        :class="tab === 'censorship' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Censorship</button>
                                 @if($organization->roleFor(auth()->user()) === 'owner')
                                     <button type="button" @click="tab = 'move'"
                                             :class="tab === 'move' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
@@ -176,6 +179,31 @@
 
                                     <div class="flex justify-end gap-2">
                                         <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
+                                        <x-button type="submit">Save</x-button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div x-show="tab === 'censorship'" x-cloak>
+                                <form method="POST" action="{{ route('organizations.projects.censorship.update', [$organization, $project]) }}" class="space-y-4">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <p class="text-xs text-gray-500">
+                                        Values of these request headers are redacted to <code>&lt;CENSORED&gt;</code>
+                                        before an event is stored or forwarded. One header per line.
+                                    </p>
+
+                                    <x-form.textarea label="Censored headers" name="censored_headers" rows="6"
+                                                      :error="$errors->first('censored_headers')">{{ old('censored_headers', implode("\n", $project->censoredHeaders())) }}</x-form.textarea>
+
+                                    @unless($project->censored_headers === null)
+                                        <p class="text-xs text-gray-400">This project uses a custom header list instead of the default.</p>
+                                    @endunless
+
+                                    <div class="flex justify-end gap-2">
+                                        <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
+                                        <x-button type="submit" name="reset" value="1" variant="secondary">Reset to default</x-button>
                                         <x-button type="submit">Save</x-button>
                                     </div>
                                 </form>
