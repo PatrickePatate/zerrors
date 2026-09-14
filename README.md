@@ -134,6 +134,38 @@ Zerrors uses a [Slack App](https://api.slack.com/apps) with OAuth so alerts post
 5. In Zerrors, go to an organization's **Settings → Integrations** and click **Connect Slack** to authorize the app for your workspace.
 6. In a project's notification channels, add a Slack channel — it's now picked from a list fetched from your workspace instead of a webhook URL.
 
+## Benchmarking ingestion throughput
+
+A [k6](https://k6.io) load test lives at [`tests/load/k6-ingest.js`](tests/load/k6-ingest.js), sending synthetic Sentry envelopes to `POST /api/{projectId}/envelope/` at a fixed rate:
+
+```bash
+k6 run \
+  -e BASE_URL=https://your-instance.example \
+  -e PROJECT_ID=1 \
+  -e PUBLIC_KEY=your-project-public-key \
+  -e RATE=500 \
+  -e DURATION=60s \
+  tests/load/k6-ingest.js
+```
+
+Ingestion is cheap on the request path — it just validates the DSN and pushes onto the `fault-ingest` Redis queue. The real ceiling is how fast Horizon's `supervisor-ingest` workers drain that queue, so watch `php artisan queue:monitor fault-ingest` alongside a run to catch a growing backlog.
+
+Two `.env` keys tune this without editing code: `FAULT_INGEST_RATE_LIMIT` (requests/minute per project, default `300`, see `config/fault.php`) and `FAULT_INGEST_MAX_PROCESSES` (Horizon's `supervisor-ingest` worker cap in production, default `30`, see `config/horizon.php`). Restart Octane/Horizon after changing either — running workers don't pick up `.env` changes on their own.
+
+Don't size `FAULT_INGEST_MAX_PROCESSES` past your CPU core count: in testing, 30 workers against PostgreSQL on a single shared machine performed *worse* than 4 (HTTP latency rose from ~25ms to ~425ms) because workers were competing with Octane for CPU, not waiting on the database. With workers near the core count, throughput was roughly 15 jobs/sec/worker against PostgreSQL — re-measure this on your own hardware.
+
+Using that baseline, here's a starting point for `FAULT_INGEST_MAX_PROCESSES` at various sustained rates (raise `FAULT_INGEST_RATE_LIMIT` too, since it caps a single project at 300 req/min by default):
+
+| Target sustained rate | `FAULT_INGEST_MAX_PROCESSES` | Notes |
+|---|---|---|
+| 50 RPS | 6 | Well within the default cap. |
+| 100 RPS | 10 | Still within the default cap. |
+| 300 RPS | 30 | The current default — verify against your core count. |
+| 500 RPS | 50 | Above default; raise the rate limit too. |
+| 1000 RPS | 100 | Likely needs dedicated queue-worker hosts and a database sized for the write volume. |
+
+These are starting points, not guarantees — verify with the k6 script against hardware that mirrors production.
+
 ## Testing
 
 ```bash
