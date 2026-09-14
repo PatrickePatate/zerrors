@@ -27,14 +27,16 @@ export default function monitorChart(checks) {
             // development) the old SVG must be torn down first.
             this.$el.innerHTML = '';
 
-            const seriesData = checks.map((check) => ({
-                x: new Date(check.checked_at).getTime(),
-                y: check.response_time_ms,
-                status: check.status,
-                phases: PHASES.filter((phase) => check[phase.key] !== null && check[phase.key] !== undefined).map((phase) => ({
-                    label: phase.label,
-                    color: phase.color,
-                    value: check[phase.key],
+            const timestamps = checks.map((check) => new Date(check.checked_at).getTime());
+            const statuses = checks.map((check) => check.status);
+
+            // One series per phase, stacked, so the layered fills show how much
+            // of the total response time each phase actually took.
+            const series = PHASES.map((phase) => ({
+                name: phase.label,
+                data: checks.map((check, index) => ({
+                    x: timestamps[index],
+                    y: check[phase.key] ?? null,
                 })),
             }));
 
@@ -42,42 +44,44 @@ export default function monitorChart(checks) {
                 chart: {
                     type: 'area',
                     height: '100%',
+                    stacked: true,
                     toolbar: { show: false },
                     fontFamily: 'inherit',
                 },
-                series: [{ name: 'Response time', data: seriesData }],
-                colors: ['#16a34a'],
+                series,
+                colors: PHASES.map((phase) => phase.color),
                 stroke: { curve: 'smooth', width: 2 },
                 fill: {
                     type: 'gradient',
-                    gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05 },
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.55, opacityTo: 0.15, stops: [0, 100] },
                 },
                 markers: {
-                    size: 3,
-                    colors: seriesData.map((point) => (point.status === 'down' ? '#dc2626' : '#16a34a')),
-                    strokeWidth: 0,
+                    size: 0,
                 },
                 xaxis: { type: 'datetime', labels: { datetimeUTC: false } },
                 yaxis: {
                     title: { text: 'ms' },
                     labels: { formatter: (value) => (value === null ? '—' : Math.round(value)) },
                 },
+                legend: { show: true, position: 'top' },
                 tooltip: {
-                    custom: ({ seriesIndex, dataPointIndex, w }) => {
-                        const point = w.config.series[seriesIndex].data[dataPointIndex];
-                        const date = new Date(point.x).toLocaleString(undefined, {
+                    shared: true,
+                    custom: ({ dataPointIndex, w }) => {
+                        const date = new Date(timestamps[dataPointIndex]).toLocaleString(undefined, {
                             dateStyle: 'medium',
                             timeStyle: 'short',
                         });
 
-                        if (point.y === null) {
+                        if (statuses[dataPointIndex] === 'down') {
                             return `<div class="p-3 text-sm">
                                 <div class="font-semibold mb-1">${date}</div>
                                 <div>No response</div>
                             </div>`;
                         }
 
-                        const phaseRows = point.phases
+                        const phaseRows = w.config.series
+                            .map((s, index) => ({ label: s.name, color: PHASES[index].color, value: s.data[dataPointIndex]?.y }))
+                            .filter((phase) => phase.value !== null && phase.value !== undefined)
                             .map(
                                 (phase) => `<div class="flex items-center gap-1.5">
                                     <span class="inline-block w-2 h-2 rounded-full" style="background-color: ${phase.color}"></span>
@@ -86,9 +90,11 @@ export default function monitorChart(checks) {
                             )
                             .join('');
 
+                        const total = w.config.series.reduce((sum, s) => sum + (s.data[dataPointIndex]?.y ?? 0), 0);
+
                         return `<div class="p-3 text-sm space-y-1">
                             <div class="font-semibold mb-1">${date}</div>
-                            <div>Total: ${Math.round(point.y)}ms</div>
+                            <div>Total: ${Math.round(total)}ms</div>
                             ${phaseRows}
                         </div>`;
                     },
