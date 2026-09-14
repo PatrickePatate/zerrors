@@ -11,4 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('fault:flush-issue-counters')->everyMinute();
 Schedule::command('zerrors:prune-events')->daily();
 Schedule::command('monitoring:dispatch-checks')->everyMinute();
-Schedule::command('monitoring:prune-checks')->daily();
+Schedule::command('monitoring:compact-checks')->daily();
+Schedule::command('monitoring:prune-checks')->dailyAt('01:00');

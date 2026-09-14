@@ -104,8 +104,23 @@
     </x-card>
 
     <x-card>
-        <h2 class="mb-3 text-sm font-medium text-gray-700">Response time</h2>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-sm font-medium text-gray-700">Response time</h2>
+            <div class="flex flex-wrap items-center gap-2">
+                <x-button wire:click="setChartRange(7)" variant="secondary" class="!px-2.5 !py-1 text-xs">7d</x-button>
+                <x-button wire:click="setChartRange(30)" variant="secondary" class="!px-2.5 !py-1 text-xs">30d</x-button>
+                <x-button wire:click="setChartRange(90)" variant="secondary" class="!px-2.5 !py-1 text-xs">90d</x-button>
+                <div class="w-36">
+                    <x-form.date-picker size="small" id="chart-start-date" :value="$chartStartDate" wire:model.live="chartStartDate" />
+                </div>
+                <span class="text-xs text-gray-400">to</span>
+                <div class="w-36">
+                    <x-form.date-picker id="chart-end-date" size="small" :value="$chartEndDate" wire:model.live="chartEndDate" />
+                </div>
+            </div>
+        </div>
         <div
+            wire:key="response-time-chart-{{ $chartStartDate }}-{{ $chartEndDate }}"
             x-data="monitorChart(@js($chartChecks))"
             x-init="init()"
             wire:ignore
