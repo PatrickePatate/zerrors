@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project:slug}/rotate-key', [DashboardController::class, 'rotateKey'])->name('organizations.projects.rotateKey');
         Route::patch('/projects/{project:slug}/settings', [DashboardController::class, 'updateSettings'])->name('organizations.projects.settings.update');
         Route::patch('/projects/{project:slug}/forwarding', [DashboardController::class, 'updateForwarding'])->name('organizations.projects.forwarding.update');
+        Route::patch('/projects/{project:slug}/censorship', [DashboardController::class, 'updateCensorship'])->name('organizations.projects.censorship.update');
         Route::post('/projects/{project:slug}/transfer', [DashboardController::class, 'transfer'])->name('organizations.projects.transfer');
         Route::delete('/projects/{project:slug}', [DashboardController::class, 'destroy'])->name('organizations.projects.destroy');
         Route::post('/projects/{project:slug}/releases', [ReleaseController::class, 'store'])->name('organizations.projects.releases.store');

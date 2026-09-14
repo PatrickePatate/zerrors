@@ -4,7 +4,9 @@ namespace App\Jobs\Fault;
 
 use App\Models\FaultEvent;
 use App\Models\FaultIssue;
+use App\Models\FaultProject;
 use App\Support\Fault\EventFingerprinter;
+use App\Support\Fault\EventPayloadCensor;
 use App\Support\Fault\IssueAlertNotifier;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\QueryException;
@@ -41,9 +43,11 @@ class ProcessFaultEvent implements ShouldQueue
             return;
         }
 
-        ForwardFaultEvent::dispatch($this->projectId, $this->eventId, $this->payload);
+        $censoredHeaders = FaultProject::find($this->projectId)?->censoredHeaders() ?? FaultProject::DEFAULT_CENSORED_HEADERS;
+        $payload = EventPayloadCensor::redact($this->payload, $censoredHeaders);
 
-        $payload = $this->payload;
+        ForwardFaultEvent::dispatch($this->projectId, $this->eventId, $payload);
+
         $exception = $payload['exception']['values'][0] ?? null;
         $fingerprint = EventFingerprinter::for($payload);
         $occurredAt = isset($payload['timestamp']) ? $this->parseTimestamp($payload['timestamp']) : now();
