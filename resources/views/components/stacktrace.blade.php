@@ -3,7 +3,7 @@
         <div>
             <p class="mb-3 flex flex-wrap items-center gap-2">
                 @if($value->handled !== null)
-                    <x-badge :color="$value->handled ? 'gray' : 'red'">
+                    <x-badge :color="$value->handled ? 'green' : 'red'">
                         {{ $value->handled ? 'Handled' : 'Unhandled' }}
                     </x-badge>
                 @endif
