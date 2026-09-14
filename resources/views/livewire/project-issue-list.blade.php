@@ -19,8 +19,13 @@
                                 :options="['' => 'Anyone', 'me' => 'Me', 'unassigned' => 'Unassigned']"
                                 :selected="$assigned" />
             </div>
+            <div class="w-36">
+                <x-form.select label="Handled" id="handled" wire:model.live="handled"
+                                :options="collect(['handled' => 'Handled', 'unhandled' => 'Unhandled'])->prepend('Any', '')"
+                                :selected="$handled" />
+            </div>
             <div wire:loading class="text-sm text-gray-400">Filtering&hellip;</div>
-            @if($search !== '' || $level !== '' || $status !== '' || $assigned !== '')
+            @if($search !== '' || $level !== '' || $status !== '' || $assigned !== '' || $handled !== '')
                 <button type="button" wire:click="clearFilters" class="text-sm text-gray-500 hover:underline">Clear</button>
             @endif
         </div>
