@@ -1,7 +1,12 @@
 <div class="space-y-6">
     @foreach($values as $value)
         <div>
-            <p class="mb-3">
+            <p class="mb-3 flex flex-wrap items-center gap-2">
+                @if($value->handled !== null)
+                    <x-badge :color="$value->handled ? 'gray' : 'red'">
+                        {{ $value->handled ? 'Handled' : 'Unhandled' }}
+                    </x-badge>
+                @endif
                 <span class="font-semibold text-red-600">{{ $value->type }}</span>
                 @if($value->message)
                     <span class="ml-1 text-gray-700">{{ $value->message }}</span>
