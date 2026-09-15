@@ -24,8 +24,14 @@
             <div class="w-48">
                 <x-form.text-input label="Model (optional)" name="aiModel" wire:model="aiModel" placeholder="Provider default" />
             </div>
+            <div class="w-48">
+                <x-form.text-input label="Deep analysis model (optional)" name="aiDeepModel" wire:model="aiDeepModel" placeholder="Same as above" />
+            </div>
             <x-button type="submit" wire:loading.attr="disabled">Save</x-button>
         </form>
+        <p class="mt-2 text-xs text-gray-500">
+            The deeper analysis reuses the model above unless you set a different (e.g. more capable) one just for it.
+        </p>
 
         @if($organization->hasAiConfigured())
             <button type="button" wire:click="disconnect" wire:confirm="Disconnect the AI assistant?" class="mt-3 text-sm text-red-600 hover:underline">
