@@ -8,8 +8,8 @@
     </a>
 
     <x-card class="mb-6">
-        <div class="flex items-start justify-between gap-3">
-            <div>
+        <div class="flex flex-col items-start justify-between gap-3 sm:flex-row">
+            <div class="min-w-0">
                 <div class="-ms-1 text-sm font-normal">
                     <x-badge class="flex items-center gap-1.5 px-2 py-1">{{ $project->platform->icon('3') }} {{ $project->platform->label() }}</x-badge>
                 </div>
@@ -17,12 +17,12 @@
                     {{ $project->name }}
                 </h1>
 
-                <div class="mt-1 text-sm text-gray-600">
+                <div class="mt-1 text-sm text-gray-600 break-all">
                     DSN:
                     <x-credential :value="$project->dsn()" />
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <x-button tag="a" href="{{ route('organizations.monitors.index', $organization).'?project='.$project->slug }}" variant="secondary">
                     <x-lucide-activity class="h-4 w-4" />
                     Monitoring
@@ -42,12 +42,12 @@
                     <h2 class="text-sm font-medium text-gray-700">Releases</h2>
 
                     @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
-                        <form method="POST" action="{{ route('organizations.projects.releases.store', [$organization, $project]) }}" class="mt-3 flex items-end gap-2">
+                        <form method="POST" action="{{ route('organizations.projects.releases.store', [$organization, $project]) }}" class="mt-3 flex flex-wrap items-end gap-2">
                             @csrf
-                            <div class="w-32">
+                            <div class="w-full sm:w-32">
                                 <x-form.text-input name="version" placeholder="v1.4.2" required />
                             </div>
-                            <div class="w-48">
+                            <div class="w-full flex-1 sm:w-48">
                                 <x-form.text-input name="notes" placeholder="Notes (optional)" />
                             </div>
                             <x-button type="submit" variant="secondary" class="h-10 text-xs">Mark deploy</x-button>
@@ -98,23 +98,23 @@
                         </x-slot:trigger>
 
                         <div x-data="{ tab: 'details' }">
-                            <div class="mb-4 flex gap-1 border-b border-gray-200">
+                            <div class="mb-4 flex gap-1 overflow-x-auto border-b border-gray-200">
                                 <button type="button" @click="tab = 'details'"
                                         :class="tab === 'details' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Details</button>
+                                        class="shrink-0 border-b-2 px-3 pb-2 text-sm font-medium">Details</button>
                                 <button type="button" @click="tab = 'notifications'"
                                         :class="tab === 'notifications' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Notifications</button>
+                                        class="shrink-0 border-b-2 px-3 pb-2 text-sm font-medium">Notifications</button>
                                 <button type="button" @click="tab = 'forwarding'"
                                         :class="tab === 'forwarding' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Forwarding</button>
+                                        class="shrink-0 border-b-2 px-3 pb-2 text-sm font-medium">Forwarding</button>
                                 <button type="button" @click="tab = 'censorship'"
                                         :class="tab === 'censorship' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                        class="border-b-2 px-3 pb-2 text-sm font-medium">Censorship</button>
+                                        class="shrink-0 border-b-2 px-3 pb-2 text-sm font-medium">Censorship</button>
                                 @if($organization->roleFor(auth()->user()) === 'owner')
                                     <button type="button" @click="tab = 'move'"
                                             :class="tab === 'move' ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                            class="border-b-2 px-3 pb-2 text-sm font-medium">Move</button>
+                                            class="shrink-0 border-b-2 px-3 pb-2 text-sm font-medium">Move</button>
                                 @endif
                             </div>
 
