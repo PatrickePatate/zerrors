@@ -62,7 +62,7 @@ class IssueAnalyzer
         $response = (new IssueDeepAnalystAgent)->stream(
             $this->buildDeepPrompt($issue),
             provider: $organization->ai_provider,
-            model: $organization->ai_model ?: null,
+            model: $organization->aiDeepModel(),
         );
 
         foreach ($response as $event) {
