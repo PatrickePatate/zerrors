@@ -55,6 +55,11 @@ class FaultIssue extends Model
         return $this->belongsTo(User::class, 'assigned_to_user_id');
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(FaultIssueShareLink::class);
+    }
+
     /**
      * Whether this issue was derived from a log entry rather than a captured
      * exception (see IngestController::dispatchLogItems() and ProcessFaultEvent,

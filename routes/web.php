@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Fault\DashboardController;
 use App\Http\Controllers\Fault\IssueController;
+use App\Http\Controllers\Fault\PublicIssueController;
 use App\Http\Controllers\Fault\ReleaseController;
 use App\Http\Controllers\Integrations\GithubAppController;
 use App\Http\Controllers\Integrations\SlackAppController;
@@ -52,6 +53,11 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/invites/{token}', [InviteController::class, 'show'])->name('invites.accept');
+
+Route::get('/share/{token}', [PublicIssueController::class, 'show'])->name('share.show');
+Route::post('/share/{token}/unlock', [PublicIssueController::class, 'unlock'])
+    ->middleware('throttle:10,1')
+    ->name('share.unlock');
 
 Route::get('/integrations/github/callback', [GithubAppController::class, 'callback'])->name('integrations.github.callback');
 Route::get('/integrations/slack/callback', [SlackAppController::class, 'callback'])->name('integrations.slack.callback');
