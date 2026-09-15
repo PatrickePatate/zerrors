@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\MonitorStatusChanged;
 use App\Listeners\SendMonitorStatusChangeNotification;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
@@ -37,5 +38,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(MonitorStatusChanged::class, SendMonitorStatusChangeNotification::class);
+
+        Model::shouldBeStrict($this->app->environment('testing'));
     }
 }

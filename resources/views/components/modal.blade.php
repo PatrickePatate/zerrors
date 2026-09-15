@@ -44,7 +44,7 @@
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
                 @click.outside="open = false"
-                {{ $attributes->class(['relative w-full rounded-xl bg-white p-6 shadow-xl', $maxWidths[$maxWidth] ?? $maxWidths['md']]) }}
+                {{ $attributes->class(['relative max-h-[90vh] w-full overflow-y-auto rounded-xl bg-white p-6 shadow-xl', $maxWidths[$maxWidth] ?? $maxWidths['md']]) }}
             >
                 {{ $slot }}
             </div>
