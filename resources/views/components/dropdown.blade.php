@@ -18,6 +18,36 @@
             const width = {{ $matchTriggerWidth ? 'true' : 'false' }} ? `width:${rect.width}px;` : '';
             this.menuStyle = `top:${top}px; left:${left}px; ${width} transform: translate({{ $align === 'right' ? '-100%' : '0' }}, {{ $up ? '-100%' : '0' }});`;
         },
+        openAt(x, y) {
+            this.menuStyle = `top:${y}px; left:${x}px;`;
+            this.dropdownOpen = true;
+            this.clampToViewport();
+        },
+        clampToViewport() {
+            this.$nextTick(() => {
+                const menu = $refs.dropdownMenu;
+                if (! menu) return;
+                const rect = menu.getBoundingClientRect();
+                const margin = 8;
+                let deltaX = 0;
+                let deltaY = 0;
+                if (rect.right > window.innerWidth - margin) {
+                    deltaX = (window.innerWidth - margin) - rect.right;
+                }
+                if (rect.left + deltaX < margin) {
+                    deltaX = margin - rect.left;
+                }
+                if (rect.bottom > window.innerHeight - margin) {
+                    deltaY = (window.innerHeight - margin) - rect.bottom;
+                }
+                if (rect.top + deltaY < margin) {
+                    deltaY = margin - rect.top;
+                }
+                if (deltaX !== 0 || deltaY !== 0) {
+                    menu.style.transform += ` translate(${deltaX}px, ${deltaY}px)`;
+                }
+            });
+        },
         toggle() {
             if (this.dropdownOpen) {
                 this.dropdownOpen = false;
@@ -25,10 +55,7 @@
             }
             this.positionBelowTrigger();
             this.dropdownOpen = true;
-        },
-        openAt(x, y) {
-            this.menuStyle = `top:${y}px; left:${x}px;`;
-            this.dropdownOpen = true;
+            this.clampToViewport();
         },
     }"
     class="relative"
@@ -42,6 +69,7 @@
 
     <template x-teleport="body">
         <div
+            x-ref="dropdownMenu"
             x-show="dropdownOpen"
             x-on:click.away="dropdownOpen = false"
             x-transition:enter="ease-out duration-200"
@@ -53,7 +81,7 @@
             x-cloak
             :style="menuStyle"
             {{ $attributes->class([
-                'fixed z-50 w-max min-w-max rounded-md border border-neutral-200/70 bg-white p-1 shadow-md text-neutral-700',
+                'fixed z-50 w-max max-w-[calc(100vw-1rem)] min-w-max rounded-md border border-neutral-200/70 bg-white p-1 shadow-md text-neutral-700',
             ]) }}
         >
             {{ $slot }}

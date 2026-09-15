@@ -48,7 +48,7 @@
                 @keydown.arrow-up.prevent="moveActive(-1)"
                 @keydown.enter.prevent="selectActive()"
                 x-ref="panel"
-                class="relative flex w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+                class="relative flex max-h-[70vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
             >
                 <livewire:command-palette :organization="$organization" />
             </div>
