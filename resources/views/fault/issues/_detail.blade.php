@@ -53,6 +53,10 @@
     @endunless
 </x-card>
 
+@if($isGuest)
+    @include('fault.issues._ai-analysis-readonly')
+@endif
+
 @if($currentEvent && ! $isGuest && $eventNavigation)
     <x-card>
         <div class="flex flex-wrap items-center justify-between gap-3">

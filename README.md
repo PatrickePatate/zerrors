@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="public/images/logo.png" alt="Zerrors" width="320">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/images/zerrors-white.svg">
+    <img src="public/images/zerrors.svg" alt="Zerrors" width="320">
+  </picture>
 </p>
 
 <p align="center">

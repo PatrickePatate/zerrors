@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>@yield('title', 'Zerrors')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/bug.svg') }}">
     <script>
         window.livewireScriptConfig = {
             csrf: '{{ csrf_token() }}',
@@ -16,7 +16,7 @@
 <body class="min-h-screen bg-gray-50 font-sans text-gray-900 antialiased">
     <div class="mx-auto max-w-4xl px-4 py-8">
         <a href="/" class="mb-6 flex items-center gap-2 text-lg font-semibold text-gray-900">
-            <img src="{{ asset('images/logo.png') }}" alt="Zerrors" class="h-7 w-auto">
+            <img src="{{ asset('images/zerrors.svg') }}" alt="Zerrors" class="h-7 w-auto">
         </a>
 
         @if(session('status'))

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>@yield('title', 'Zerrors')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-{{--    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">--}}
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/bug.svg') }}">
     <script>
         window.livewireScriptConfig = {
             csrf: '{{ csrf_token() }}',
@@ -26,7 +26,7 @@
         >
             <div class="flex h-14 items-center gap-2 border-b border-gray-200 px-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-semibold text-gray-900">
-                    <img src="{{ asset('images/logo.png') }}" alt="Zerrors" class="h-6 w-auto">
+                    <img src="{{ asset('images/zerrors.svg') }}" alt="Zerrors" class="h-6 w-auto">
                 </a>
             </div>
 
@@ -122,7 +122,7 @@
                 <button @click="sidebarOpen = true" class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100">
                     <x-lucide-menu class="h-5 w-5" />
                 </button>
-                <img src="{{ asset('images/logo.png') }}" alt="Zerrors" class="h-6 w-auto">
+                <img src="{{ asset('images/zerrors.svg') }}" alt="Zerrors" class="h-6 w-auto">
             </header>
 
             <main class="flex-1 overflow-y-auto p-6">

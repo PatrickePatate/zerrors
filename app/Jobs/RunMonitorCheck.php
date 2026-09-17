@@ -32,7 +32,19 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
         return (string) $this->monitor->id;
     }
 
-    public $uniqueFor = 300;
+    /**
+     * A ceiling on how long the unique lock is held, in case a job dies
+     * without releasing it — must exceed the check's worst-case runtime or
+     * a still-running job's lock can expire and let a new one in, bringing
+     * back the exact duplicate-notification race this class exists to
+     * prevent. Worst case: 3 HTTP attempts (1 try + 2 retries) plus one
+     * certificate check, each up to timeout_seconds (capped at 120s), so
+     * 4 * timeout_seconds comfortably covers it.
+     */
+    public function uniqueFor(): int
+    {
+        return ($this->monitor->timeout_seconds * 4) + 60;
+    }
 
     public function handle(MonitorCheckRunner $runner): void
     {
