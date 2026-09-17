@@ -53,10 +53,6 @@
     @endunless
 </x-card>
 
-@if($isGuest)
-    @include('fault.issues._ai-analysis-readonly')
-@endif
-
 @if($currentEvent && ! $isGuest && $eventNavigation)
     <x-card>
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -122,6 +118,10 @@
         <h2 class="mb-3 text-sm font-medium text-gray-700">Log context</h2>
         <pre class="overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700">{{ json_encode($currentEvent->log_context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
     </x-card>
+@endif
+
+@if($isGuest)
+    @include('fault.issues._ai-analysis-readonly')
 @endif
 
 @if($currentEvent)

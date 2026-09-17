@@ -16,7 +16,12 @@ const PHASES = [
     { key: 'download_time_ms', label: 'Content download', color: '#f59e0b' },
 ];
 
-export default function monitorChart(checks) {
+// Ping checks have no DNS/connect/SSL/TTFB/download breakdown — there's just
+// the one round-trip time — so they get a single "Response time" series
+// instead of the stacked phase breakdown HTTP(S) and Laravel Health checks use.
+const PING_PHASES = [{ key: 'response_time_ms', label: 'Response time', color: '#3b82f6' }];
+
+export default function monitorChart(checks, monitorType) {
     return {
         chart: null,
 
@@ -27,12 +32,14 @@ export default function monitorChart(checks) {
             // development) the old SVG must be torn down first.
             this.$el.innerHTML = '';
 
+            const phases = monitorType === 'ping' ? PING_PHASES : PHASES;
+
             const timestamps = checks.map((check) => new Date(check.checked_at).getTime());
             const statuses = checks.map((check) => check.status);
 
             // One series per phase, stacked, so the layered fills show how much
             // of the total response time each phase actually took.
-            const series = PHASES.map((phase) => ({
+            const series = phases.map((phase) => ({
                 name: phase.label,
                 data: checks.map((check, index) => ({
                     x: timestamps[index],
@@ -49,7 +56,7 @@ export default function monitorChart(checks) {
                     fontFamily: 'inherit',
                 },
                 series,
-                colors: PHASES.map((phase) => phase.color),
+                colors: phases.map((phase) => phase.color),
                 stroke: { curve: 'smooth', width: 2 },
                 fill: {
                     type: 'gradient',
@@ -80,7 +87,7 @@ export default function monitorChart(checks) {
                         }
 
                         const phaseRows = w.config.series
-                            .map((s, index) => ({ label: s.name, color: PHASES[index].color, value: s.data[dataPointIndex]?.y }))
+                            .map((s, index) => ({ label: s.name, color: phases[index].color, value: s.data[dataPointIndex]?.y }))
                             .filter((phase) => phase.value !== null && phase.value !== undefined)
                             .map(
                                 (phase) => `<div class="flex items-center gap-1.5">
