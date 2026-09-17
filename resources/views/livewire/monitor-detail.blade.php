@@ -121,7 +121,7 @@
         </div>
         <div
             wire:key="response-time-chart-{{ $chartStartDate }}-{{ $chartEndDate }}"
-            x-data="monitorChart(@js($chartChecks))"
+            x-data="monitorChart(@js($chartChecks), @js($monitor->type->value))"
             x-init="init()"
             wire:ignore
             class="h-64 w-full -mt-4 mb-7"
