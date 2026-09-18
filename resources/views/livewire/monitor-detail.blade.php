@@ -47,9 +47,9 @@
                     </x-badge>
                     <p class="text-sm text-gray-600">
                         @if($certificateDaysRemaining < 0)
-                            Expired {{ $certificateExpiresAt->diffForHumans() }} ({{ $certificateExpiresAt->toFormattedDateString() }})
+                            Expired {{ $certificateExpiresAt->diffForHumans() }} (<x-local-time :at="$certificateExpiresAt" format="date" />)
                         @else
-                            Expires in {{ $certificateDaysRemaining }} day(s) &middot; {{ $certificateExpiresAt->toFormattedDateString() }}
+                            Expires in {{ $certificateDaysRemaining }} day(s) &middot; <x-local-time :at="$certificateExpiresAt" format="date" />
                         @endif
                     </p>
                 </div>

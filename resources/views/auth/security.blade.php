@@ -47,6 +47,27 @@
     </x-card>
 
     <x-card class="mb-6">
+        <h2 class="mb-1 text-sm font-medium text-gray-700">Preferences</h2>
+        <p class="mb-3 text-sm text-gray-500">
+            Dates and times are shown in your browser's timezone by default. Pick one below to always use it instead, on any device.
+        </p>
+
+        <form method="POST" action="{{ route('security.timezone.update') }}" class="flex items-end gap-3">
+            @csrf
+            <div class="max-w-xs flex-1">
+                <x-form.select
+                    name="timezone"
+                    label="Timezone"
+                    :options="['' => 'Automatic (browser)'] + $timezoneOptions"
+                    :selected="$user->timezone ?? ''"
+                    :error="$errors->first('timezone')"
+                />
+            </div>
+            <x-button type="submit">Save</x-button>
+        </form>
+    </x-card>
+
+    <x-card class="mb-6">
         <h2 class="mb-1 text-sm font-medium text-gray-700">Two-factor authentication</h2>
         <p class="mb-3 text-sm text-gray-500">Protect your account with a TOTP authenticator app (Google Authenticator, 1Password, Authy&hellip;).</p>
 

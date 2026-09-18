@@ -10,6 +10,7 @@
             csrf: '{{ csrf_token() }}',
             uri: '{{ route('default-livewire.update') }}',
         };
+        window.userTimezone = @json(auth()->user()?->timezone);
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

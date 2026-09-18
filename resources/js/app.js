@@ -4,6 +4,7 @@ import Clipboard from '@ryangjchandler/alpine-clipboard';
 import Prism from 'prismjs';
 import monitorChart from './monitor-chart';
 import datePicker from './date-picker';
+import initLocalTime from './local-time';
 
 // window.livewireScriptConfig is set inline in the layout <head> (before this
 // module loads) with the CSRF token + update endpoint URI that Livewire's
@@ -163,6 +164,8 @@ document.addEventListener('alpine:init', () => {
 });
 
 Livewire.start();
+
+initLocalTime();
 
 window.Prism = Prism;
 Prism.manual = true;
