@@ -55,4 +55,36 @@ class RunMonitorCheckTest extends TestCase
             (new RunMonitorCheck($slow))->uniqueFor(),
         );
     }
+
+    /**
+     * Under Horizon's `auto` balancing, a job still running past the
+     * supervisor's own timeout (config/horizon.php sets 60s) is treated as
+     * "hanging" and force-killed on scale down, which abandons it mid-run
+     * and lets it be redelivered and reprocessed — sending a duplicate
+     * notification for the same status change. The job must declare its own
+     * timeout so Horizon never applies that shorter default to it.
+     */
+    public function test_timeout_exceeds_the_horizon_supervisor_default(): void
+    {
+        $monitor = new Monitor;
+        $monitor->id = 1;
+        $monitor->timeout_seconds = 120;
+
+        $job = new RunMonitorCheck($monitor);
+
+        $horizonSupervisorDefaultTimeout = 60;
+
+        $this->assertGreaterThan($horizonSupervisorDefaultTimeout, $job->timeout);
+    }
+
+    public function test_timeout_matches_unique_for(): void
+    {
+        $monitor = new Monitor;
+        $monitor->id = 1;
+        $monitor->timeout_seconds = 45;
+
+        $job = new RunMonitorCheck($monitor);
+
+        $this->assertSame($job->uniqueFor(), $job->timeout);
+    }
 }
