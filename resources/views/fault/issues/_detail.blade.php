@@ -61,7 +61,7 @@
                     Event {{ $eventNavigation['position'] }} of {{ $eventNavigation['total'] }}
                 </h2>
                 <p class="mt-0.5 text-xs text-gray-400">
-                    {{ $currentEvent->occurred_at }} &middot; <code class="text-gray-500">{{ $currentEvent->event_id }}</code>
+                    <x-local-time :at="$currentEvent->occurred_at" /> &middot; <code class="text-gray-500">{{ $currentEvent->event_id }}</code>
                     @if($currentEvent->environment) &middot; {{ $currentEvent->environment }} @endif
                     @if($currentEvent->release) &middot; {{ $currentEvent->release }} @endif
                 </p>
@@ -147,9 +147,9 @@
                     @if($isGuest)
                         <x-table.cell class="whitespace-nowrap">
                             @if($isCurrent)
-                                <span class="font-medium text-indigo-700">{{ $event->occurred_at }}</span>
+                                <span class="font-medium text-indigo-700"><x-local-time :at="$event->occurred_at" /></span>
                             @else
-                                {{ $event->occurred_at }}
+                                <x-local-time :at="$event->occurred_at" />
                             @endif
                         </x-table.cell>
                         <x-table.cell class="max-w-xs truncate">{{ $event->message ?: '—' }}</x-table.cell>
@@ -157,9 +157,9 @@
                         <x-table.cell class="whitespace-nowrap">
                             <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block text-gray-700 hover:text-gray-900">
                                 @if($isCurrent)
-                                    <span class="font-medium text-indigo-700">{{ $event->occurred_at }}</span>
+                                    <span class="font-medium text-indigo-700"><x-local-time :at="$event->occurred_at" /></span>
                                 @else
-                                    {{ $event->occurred_at }}
+                                    <x-local-time :at="$event->occurred_at" />
                                 @endif
                             </a>
                         </x-table.cell>
