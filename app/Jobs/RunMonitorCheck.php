@@ -16,7 +16,22 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public Monitor $monitor) {}
+    /**
+     * Overrides the queue worker's/Horizon supervisor's default job timeout
+     * (60s), which is far shorter than this job's own worst-case runtime.
+     * Under Horizon's `auto` balancing, a job still running past the
+     * supervisor timeout is treated as "hanging" and force-killed on scale
+     * down — abandoning it mid-run so it gets redelivered and reprocessed,
+     * sending a duplicate notification for the same status change. Setting
+     * this per-job timeout keeps Horizon from ever mistaking a legitimately
+     * slow check for a hung one.
+     */
+    public int $timeout;
+
+    public function __construct(public Monitor $monitor)
+    {
+        $this->timeout = $this->worstCaseCheckSeconds();
+    }
 
     /**
      * Keeps a slow-to-respond monitor from being checked by two overlapping
@@ -37,11 +52,19 @@ class RunMonitorCheck implements ShouldBeUnique, ShouldQueue
      * without releasing it — must exceed the check's worst-case runtime or
      * a still-running job's lock can expire and let a new one in, bringing
      * back the exact duplicate-notification race this class exists to
-     * prevent. Worst case: 3 HTTP attempts (1 try + 2 retries) plus one
-     * certificate check, each up to timeout_seconds (capped at 120s), so
-     * 4 * timeout_seconds comfortably covers it.
+     * prevent.
      */
     public function uniqueFor(): int
+    {
+        return $this->worstCaseCheckSeconds();
+    }
+
+    /**
+     * 3 HTTP attempts (1 try + 2 retries) plus one certificate check, each up
+     * to timeout_seconds (capped at 120s), so 4 * timeout_seconds comfortably
+     * covers it; +60s buffer for the DB write and queue overhead around it.
+     */
+    private function worstCaseCheckSeconds(): int
     {
         return ($this->monitor->timeout_seconds * 4) + 60;
     }
