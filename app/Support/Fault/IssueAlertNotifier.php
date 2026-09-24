@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Throwable;
 
 class IssueAlertNotifier
@@ -24,18 +25,14 @@ class IssueAlertNotifier
      * Notify for a single processed event. A channel can match several
      * trigger rules for the same event (e.g. "new issue" and "every event");
      * it is only ever sent once, using the most specific matching label.
+     *
+     * A project email channel matching this event takes priority over the
+     * organization-wide alert for the same address, so someone who is both
+     * an org member and configured on a project channel isn't emailed twice.
      */
     public function notify(FaultIssue $issue, bool $wasNew, bool $isRegression): void
     {
         $organization = $issue->project->organization;
-
-        if ($organization->alerts_enabled) {
-            if ($wasNew) {
-                Notification::send($organization->users, new IssueCreatedNotification($issue));
-            } elseif ($isRegression) {
-                Notification::send($organization->users, new IssueRegressedNotification($issue));
-            }
-        }
 
         $triggers = [];
 
@@ -53,6 +50,23 @@ class IssueAlertNotifier
         foreach ($triggers as [$trigger, $label]) {
             foreach ($this->matchingChannels($issue, $trigger) as $channel) {
                 $matched[$channel->id] ??= [$channel, $label];
+            }
+        }
+
+        if ($organization->alerts_enabled) {
+            $alreadyNotifiedEmails = collect($matched)
+                ->map(fn ($pair) => $pair[0])
+                ->filter(fn (NotificationChannel $channel) => $channel->type === NotificationChannelType::Email)
+                ->map(fn (NotificationChannel $channel) => Str::lower($channel->config['email']));
+
+            $recipients = $organization->users->reject(
+                fn ($user) => $alreadyNotifiedEmails->contains(Str::lower($user->email))
+            );
+
+            if ($wasNew) {
+                Notification::send($recipients, new IssueCreatedNotification($issue));
+            } elseif ($isRegression) {
+                Notification::send($recipients, new IssueRegressedNotification($issue));
             }
         }
 
