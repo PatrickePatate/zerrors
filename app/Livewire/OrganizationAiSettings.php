@@ -15,6 +15,8 @@ class OrganizationAiSettings extends Component
 
     public string $aiModel = '';
 
+    public string $aiDeepModel = '';
+
     public bool $saved = false;
 
     public function mount(Organization $organization): void
@@ -22,6 +24,7 @@ class OrganizationAiSettings extends Component
         $this->organization = $organization;
         $this->aiProvider = (string) $organization->ai_provider;
         $this->aiModel = (string) $organization->ai_model;
+        $this->aiDeepModel = (string) $organization->ai_deep_model;
     }
 
     protected function authorizeManage(): void
@@ -38,11 +41,13 @@ class OrganizationAiSettings extends Component
             'aiProvider' => ['required', 'in:'.implode(',', array_keys(Organization::AI_PROVIDERS))],
             'aiApiKey' => ['nullable', 'string'],
             'aiModel' => ['nullable', 'string', 'max:255'],
+            'aiDeepModel' => ['nullable', 'string', 'max:255'],
         ]);
 
         $update = [
             'ai_provider' => $data['aiProvider'],
             'ai_model' => $data['aiModel'] ?: null,
+            'ai_deep_model' => $data['aiDeepModel'] ?: null,
         ];
 
         // Blank means "keep the existing key" — the field is never pre-filled with the real value.
@@ -59,8 +64,8 @@ class OrganizationAiSettings extends Component
     {
         $this->authorizeManage();
 
-        $this->organization->update(['ai_provider' => null, 'ai_api_key' => null, 'ai_model' => null]);
-        $this->reset('aiProvider', 'aiApiKey', 'aiModel');
+        $this->organization->update(['ai_provider' => null, 'ai_api_key' => null, 'ai_model' => null, 'ai_deep_model' => null]);
+        $this->reset('aiProvider', 'aiApiKey', 'aiModel', 'aiDeepModel');
     }
 
     public function render()

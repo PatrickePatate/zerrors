@@ -48,7 +48,8 @@
                     </x-table.cell>
                     <x-table.cell class="text-gray-500">{{ $log->user?->name ?? 'System' }}</x-table.cell>
                     <x-table.cell class="text-gray-400">
-                        <x-tooltip :message="$log->created_at->format('Y-m-d H:i:s')">
+                        <x-tooltip>
+                            <x-slot:message><x-local-time :at="$log->created_at" /></x-slot:message>
                             {{ $log->created_at->diffForHumans() }}
                         </x-tooltip>
                     </x-table.cell>

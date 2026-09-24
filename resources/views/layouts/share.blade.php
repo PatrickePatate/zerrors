@@ -14,10 +14,10 @@
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="flex min-h-screen items-center justify-center bg-gray-50 font-sans text-gray-900 antialiased">
-    <div class="w-full max-w-sm px-4 py-12">
-        <a href="/" class="mb-8 flex items-center justify-center gap-2 text-lg font-semibold text-gray-900">
-            <img src="{{ asset('images/zerrors.svg') }}" alt="Zerrors" class="h-8 w-auto">
+<body class="min-h-screen bg-gray-50 font-sans text-gray-900 antialiased">
+    <div class="mx-auto max-w-4xl px-4 py-8">
+        <a href="/" class="mb-6 flex items-center gap-2 text-lg font-semibold text-gray-900">
+            <img src="{{ asset('images/zerrors.svg') }}" alt="Zerrors" class="h-7 w-auto">
         </a>
 
         @if(session('status'))
@@ -25,6 +25,10 @@
                 {{ session('status') }}
             </div>
         @endif
+
+        <div class="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs text-gray-500">
+            <x-lucide-link class="mr-1 -ms-0.5 inline h-3.5 w-3.5" /> You're viewing this issue via a shared, read-only link.
+        </div>
 
         @yield('content')
     </div>

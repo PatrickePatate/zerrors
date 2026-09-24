@@ -45,6 +45,7 @@ class SettingsController extends Controller
             'ai_provider' => ['required', 'in:'.implode(',', array_keys(Organization::AI_PROVIDERS))],
             'ai_api_key' => ['nullable', 'string'],
             'ai_model' => ['nullable', 'string', 'max:255'],
+            'ai_deep_model' => ['nullable', 'string', 'max:255'],
         ]);
 
         // Blank means "keep the existing key" — the field is never pre-filled with the real value.
@@ -61,7 +62,7 @@ class SettingsController extends Controller
     {
         $this->authorizeManage($request, $organization);
 
-        $organization->update(['ai_provider' => null, 'ai_api_key' => null, 'ai_model' => null]);
+        $organization->update(['ai_provider' => null, 'ai_api_key' => null, 'ai_model' => null, 'ai_deep_model' => null]);
 
         return back()->with('status', 'AI assistant disconnected.');
     }

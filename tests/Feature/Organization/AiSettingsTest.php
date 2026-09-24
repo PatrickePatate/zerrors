@@ -66,6 +66,37 @@ class AiSettingsTest extends TestCase
         $this->assertSame('gpt-4o', $organization->fresh()->ai_model);
     }
 
+    public function test_owner_can_set_a_dedicated_deep_analysis_model(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+
+        $this->actingAs($owner)->patch(route('organizations.settings.ai.update', $organization), [
+            'ai_provider' => 'anthropic',
+            'ai_api_key' => 'sk-test-key',
+            'ai_model' => 'claude-3-5-haiku',
+            'ai_deep_model' => 'claude-3-5-sonnet',
+        ])->assertRedirect();
+
+        $organization->refresh();
+        $this->assertSame('claude-3-5-haiku', $organization->ai_model);
+        $this->assertSame('claude-3-5-sonnet', $organization->ai_deep_model);
+        $this->assertSame('claude-3-5-sonnet', $organization->aiDeepModel());
+    }
+
+    public function test_deep_analysis_model_falls_back_to_the_standard_model(): void
+    {
+        $organization = Organization::factory()->create([
+            'ai_provider' => 'openai',
+            'ai_api_key' => 'sk-test',
+            'ai_model' => 'gpt-4o-mini',
+            'ai_deep_model' => null,
+        ]);
+
+        $this->assertSame('gpt-4o-mini', $organization->aiDeepModel());
+    }
+
     public function test_member_cannot_configure_ai_settings(): void
     {
         $organization = Organization::factory()->create();

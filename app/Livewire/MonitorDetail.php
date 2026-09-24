@@ -121,6 +121,81 @@ class MonitorDetail extends Component
             }
         }
 
-        return $points;
+        return $this->downsample($points, 300);
+    }
+
+    /**
+     * Caps $points to at most $maxPoints using the Largest-Triangle-Three-
+     * Buckets algorithm, so the chart stays legible (and ApexCharts stays
+     * fast) even when the selected range spans many days of raw checks.
+     * Always keeps the first and last point; buckets the rest and keeps
+     * whichever point in each bucket forms the largest triangle with the
+     * previously-kept point and the next bucket's average — preserving the
+     * shape of the response-time curve instead of just sampling every Nth
+     * point.
+     *
+     * @param  array<int, array<string, mixed>>  $points
+     * @return array<int, array<string, mixed>>
+     */
+    private function downsample(array $points, int $maxPoints): array
+    {
+        $count = count($points);
+
+        if ($count <= $maxPoints || $maxPoints < 3) {
+            return $points;
+        }
+
+        $sampled = [$points[0]];
+
+        // Buckets exclude the first and last point, which are always kept.
+        $bucketSize = ($count - 2) / ($maxPoints - 2);
+        $previousIndex = 0;
+
+        for ($i = 0; $i < $maxPoints - 2; $i++) {
+            $bucketStart = (int) floor(($i + 1) * $bucketSize) + 1;
+            $bucketEnd = (int) floor(($i + 2) * $bucketSize) + 1;
+            $bucketEnd = min($bucketEnd, $count - 1);
+
+            $nextBucketStart = $bucketEnd;
+            $nextBucketEnd = min((int) floor(($i + 3) * $bucketSize) + 1, $count);
+            $nextAvgTime = 0;
+            $nextAvgValue = 0;
+            $nextCount = max(1, $nextBucketEnd - $nextBucketStart);
+
+            for ($j = $nextBucketStart; $j < $nextBucketEnd; $j++) {
+                $nextAvgTime += strtotime($points[$j]['checked_at']);
+                $nextAvgValue += $points[$j]['response_time_ms'] ?? 0;
+            }
+            $nextAvgTime /= $nextCount;
+            $nextAvgValue /= $nextCount;
+
+            $prevTime = strtotime($points[$previousIndex]['checked_at']);
+            $prevValue = $points[$previousIndex]['response_time_ms'] ?? 0;
+
+            $maxArea = -1;
+            $maxAreaIndex = $bucketStart;
+
+            for ($j = $bucketStart; $j < $bucketEnd; $j++) {
+                $time = strtotime($points[$j]['checked_at']);
+                $value = $points[$j]['response_time_ms'] ?? 0;
+
+                $area = abs(
+                    ($prevTime - $nextAvgTime) * ($value - $prevValue)
+                    - ($prevTime - $time) * ($nextAvgValue - $prevValue)
+                ) * 0.5;
+
+                if ($area > $maxArea) {
+                    $maxArea = $area;
+                    $maxAreaIndex = $j;
+                }
+            }
+
+            $sampled[] = $points[$maxAreaIndex];
+            $previousIndex = $maxAreaIndex;
+        }
+
+        $sampled[] = $points[$count - 1];
+
+        return $sampled;
     }
 }

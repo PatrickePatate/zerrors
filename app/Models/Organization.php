@@ -15,7 +15,7 @@ class Organization extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'alerts_enabled',
+        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'ai_deep_model', 'alerts_enabled',
         'require_2fa', 'github_installation_id', 'github_account_login', 'github_account_type',
         'github_connected_at', 'slack_team_id', 'slack_team_name', 'slack_bot_token',
         'slack_authed_user_id', 'slack_connected_at',
@@ -87,6 +87,15 @@ class Organization extends Model
     public function hasAiConfigured(): bool
     {
         return ! empty($this->ai_provider) && ! empty($this->ai_api_key);
+    }
+
+    /**
+     * The model to use for the deeper AI analysis, falling back to the
+     * organization's standard model when no dedicated one is configured.
+     */
+    public function aiDeepModel(): ?string
+    {
+        return $this->ai_deep_model ?: $this->ai_model ?: null;
     }
 
     public function hasGithubConnected(): bool

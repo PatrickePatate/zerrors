@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -13,7 +14,19 @@ class SecurityController extends Controller
     {
         return view('auth.security', [
             'tokens' => $request->user()->tokens()->latest()->get(),
+            'timezoneOptions' => collect(DateTimeZone::listIdentifiers())->mapWithKeys(fn (string $tz) => [$tz => $tz])->all(),
         ]);
+    }
+
+    public function updateTimezone(Request $request)
+    {
+        $data = $request->validate([
+            'timezone' => ['nullable', 'timezone'],
+        ]);
+
+        $request->user()->update(['timezone' => $data['timezone'] ?? null]);
+
+        return back()->with('status', 'Timezone preference updated.');
     }
 
     public function updateAvatar(Request $request)
