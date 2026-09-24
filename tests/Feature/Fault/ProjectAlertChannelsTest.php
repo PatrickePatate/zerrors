@@ -80,6 +80,31 @@ class ProjectAlertChannelsTest extends TestCase
         );
     }
 
+    public function test_an_org_member_configured_on_a_matching_project_channel_is_not_also_sent_the_org_wide_alert(): void
+    {
+        Notification::fake();
+
+        $organization = Organization::factory()->create(['alerts_enabled' => true]);
+        $subscribedMember = User::factory()->create(['email' => 'shared@example.com']);
+        $organization->users()->attach($subscribedMember->id, ['role' => 'member']);
+        $otherMember = User::factory()->create(['email' => 'other@example.com']);
+        $organization->users()->attach($otherMember->id, ['role' => 'member']);
+
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+        $channel = NotificationChannel::factory()->for($project, 'project')
+            ->email('shared@example.com')->create();
+        $channel->rules()->create(['trigger' => NotificationRuleTrigger::NewIssue]);
+
+        ProcessFaultEvent::dispatch($project->id, (string) Str::uuid(), $this->payload(Str::random(10)));
+
+        // The member sharing an address with the project channel gets only the
+        // channel's email; other org members still get the org-wide alert.
+        Notification::assertSentOnDemand(IssueAlertNotification::class);
+        Notification::assertSentTo($otherMember, IssueCreatedNotification::class);
+        Notification::assertNotSentTo($subscribedMember, IssueCreatedNotification::class);
+        Notification::assertSentTimes(IssueCreatedNotification::class, 1);
+    }
+
     public function test_a_disabled_channel_never_fires(): void
     {
         Http::fake();

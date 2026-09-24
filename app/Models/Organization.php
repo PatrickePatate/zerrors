@@ -39,6 +39,7 @@ class Organization extends Model
         'openai' => 'OpenAI',
         'anthropic' => 'Anthropic',
         'mistral' => 'Mistral',
+        'openrouter' => 'OpenRouter',
     ];
 
     protected static function booted(): void

@@ -29,6 +29,24 @@ class AiSettingsTest extends TestCase
         $this->assertTrue($organization->hasAiConfigured());
     }
 
+    public function test_owner_can_connect_openrouter_as_an_ai_provider(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+
+        $this->actingAs($owner)->patch(route('organizations.settings.ai.update', $organization), [
+            'ai_provider' => 'openrouter',
+            'ai_api_key' => 'sk-or-test-key',
+            'ai_model' => 'openai/gpt-4o',
+        ])->assertRedirect();
+
+        $organization->refresh();
+        $this->assertSame('openrouter', $organization->ai_provider);
+        $this->assertSame('sk-or-test-key', $organization->ai_api_key);
+        $this->assertTrue($organization->hasAiConfigured());
+    }
+
     public function test_saving_ai_settings_without_a_key_keeps_the_existing_one(): void
     {
         $organization = Organization::factory()->create([
