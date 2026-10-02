@@ -107,9 +107,9 @@ class ProcessFaultEvent implements ShouldQueue
             'fault_issue_id' => $issue->id,
             'event_id' => $this->eventId,
             'level' => $level,
-            'message' => is_array($payload['message'] ?? null)
+            'message' => $this->truncateMessage(is_array($payload['message'] ?? null)
                 ? ($payload['message']['formatted'] ?? null)
-                : ($payload['message'] ?? ($exception['value'] ?? null)),
+                : ($payload['message'] ?? ($exception['value'] ?? null))),
             'culprit' => $payload['culprit'] ?? null,
             'environment' => $payload['environment'] ?? null,
             'release' => $payload['release'] ?? null,
@@ -128,6 +128,19 @@ class ProcessFaultEvent implements ShouldQueue
         ]);
 
         app(IssueAlertNotifier::class)->notify($issue, $wasNew, $isRegression);
+    }
+
+    /**
+     * The message column is TEXT (64KB); clip oversized messages such as
+     * fatal errors embedding a full stack trace.
+     */
+    protected function truncateMessage(mixed $message): ?string
+    {
+        if (! is_string($message)) {
+            return null;
+        }
+
+        return mb_strcut($message, 0, 65000);
     }
 
     protected function parseTimestamp(mixed $timestamp): Carbon
