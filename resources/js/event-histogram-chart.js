@@ -28,7 +28,7 @@ export default function eventHistogramChart(buckets, currentTimestamp) {
             this.chart = new ApexCharts(this.$el, {
                 chart: {
                     type: 'bar',
-                    height: '100%',
+                    height: 90,
                     toolbar: { show: false },
                     zoom: { enabled: false },
                     animations: { enabled: false },
@@ -42,7 +42,7 @@ export default function eventHistogramChart(buckets, currentTimestamp) {
                 states: { hover: { filter: { type: 'darken', value: 0.85 } } },
                 dataLabels: { enabled: false },
                 legend: { show: false },
-                grid: { show: false, padding: { top: -10, bottom: -6, left: 0, right: 0 } },
+                grid: { show: false, padding: { top: -20, bottom: 0, left: 0, right: 0 } },
                 xaxis: {
                     type: 'datetime',
                     labels: { datetimeUTC: false, style: { fontSize: '10px', colors: '#9ca3af' } },
