@@ -97,7 +97,7 @@
         </div>
 
         @if(! empty($eventHistogram))
-            <div class="mt-3 h-16"
+            <div class="mt-3"
                  wire:ignore
                  x-data="eventHistogramChart(@js($eventHistogram), @js($currentEvent->occurred_at?->timestamp))"></div>
         @endif
