@@ -30,6 +30,7 @@ class IssueController extends Controller
             'currentEvent' => $currentEvent,
             'eventNavigation' => $currentEvent ? $this->eventNavigation($issue, $currentEvent) : null,
             'events' => $issue->events()->latest('occurred_at')->paginate(20),
+            'eventHistogram' => $this->eventHistogram($issue),
             'members' => $organization->users()->orderBy('name')->get(),
         ]);
     }
@@ -76,6 +77,41 @@ class IssueController extends Controller
             'position' => (int) $counts->before_count + 1,
             'total' => (int) $counts->total,
         ];
+    }
+
+    /**
+     * Bucket the issue's events over its lifetime (first event → now) for the compact
+     * events-over-time bar chart.
+     *
+     * @return list<array{start: int, end: int, count: int}>
+     */
+    private function eventHistogram(FaultIssue $issue, int $bucketCount = 48): array
+    {
+        $timestamps = $issue->events()
+            ->toBase()
+            ->whereNotNull('occurred_at')
+            ->orderBy('occurred_at')
+            ->pluck('occurred_at')
+            ->map(fn (string $occurredAt): int => strtotime($occurredAt.' UTC'));
+
+        if ($timestamps->isEmpty()) {
+            return [];
+        }
+
+        $start = $timestamps->first();
+        $end = max(time(), $timestamps->last()) + 1;
+        $bucketWidth = max(60, (int) ceil(($end - $start) / $bucketCount));
+
+        $buckets = [];
+        for ($i = 0; $i < $bucketCount; $i++) {
+            $buckets[] = ['start' => $start + $i * $bucketWidth, 'end' => $start + ($i + 1) * $bucketWidth, 'count' => 0];
+        }
+
+        foreach ($timestamps as $timestamp) {
+            $buckets[min($bucketCount - 1, intdiv($timestamp - $start, $bucketWidth))]['count']++;
+        }
+
+        return $buckets;
     }
 
     public function update(Request $request, Organization $organization, FaultProject $project, FaultIssue $issue)
