@@ -3,6 +3,7 @@ import collapse from '@alpinejs/collapse';
 import Clipboard from '@ryangjchandler/alpine-clipboard';
 import Prism from 'prismjs';
 import monitorChart from './monitor-chart';
+import eventHistogramChart from './event-histogram-chart';
 import datePicker from './date-picker';
 import initLocalTime from './local-time';
 
@@ -17,6 +18,9 @@ document.addEventListener('alpine:init', () => {
 
     // Backs the response-time chart on the monitor detail page.
     Alpine.data('monitorChart', monitorChart);
+
+    // Backs the compact events-over-time bar chart on the issue page.
+    Alpine.data('eventHistogramChart', eventHistogramChart);
 
     // Backs the <x-form.date-picker> component.
     Alpine.data('datePicker', datePicker);
