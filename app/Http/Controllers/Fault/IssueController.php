@@ -16,12 +16,31 @@ use RuntimeException;
 
 class IssueController extends Controller
 {
-    public function show(Organization $organization, FaultProject $project, FaultIssue $issue, ?string $event = null): View
+    /**
+     * Event list filters: request key => events column.
+     */
+    private const EVENT_FILTERS = ['browser', 'os', 'environment', 'release'];
+
+    public function show(Request $request, Organization $organization, FaultProject $project, FaultIssue $issue, ?string $event = null): View
     {
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
         $currentEvent = $this->resolveEvent($issue, $event);
+
+        $filters = $request->validate([
+            'ip' => ['nullable', 'string', 'max:45'],
+            ...array_fill_keys(self::EVENT_FILTERS, ['nullable', 'string', 'max:255']),
+        ]);
+        $filters = array_filter($filters, fn ($value) => $value !== null && $value !== '');
+
+        $eventsQuery = $issue->events()->latest('occurred_at');
+
+        foreach (self::EVENT_FILTERS as $column) {
+            $eventsQuery->when($filters[$column] ?? null, fn ($q, $value) => $q->where($column, $value));
+        }
+
+        $eventsQuery->when($filters['ip'] ?? null, fn ($q, $ip) => $q->where('client_ip', 'like', '%'.$ip.'%'));
 
         return view('fault.issues.show', [
             'organization' => $organization,
@@ -29,7 +48,11 @@ class IssueController extends Controller
             'issue' => $issue,
             'currentEvent' => $currentEvent,
             'eventNavigation' => $currentEvent ? $this->eventNavigation($issue, $currentEvent) : null,
-            'events' => $issue->events()->latest('occurred_at')->paginate(20),
+            'events' => $eventsQuery->paginate(20)->withQueryString(),
+            'eventFilters' => $filters,
+            'eventFilterOptions' => collect(self::EVENT_FILTERS)->mapWithKeys(fn (string $column) => [
+                $column => $issue->events()->whereNotNull($column)->distinct()->orderBy($column)->pluck($column),
+            ]),
             'eventHistogram' => $this->eventHistogram($issue),
             'members' => $organization->users()->orderBy('name')->get(),
         ]);

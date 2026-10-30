@@ -137,48 +137,103 @@
     </x-card>
 @endif
 
-<div>
-    <h2 class="mb-3 text-sm font-medium text-gray-700">All events</h2>
+@php
+    $eventFilters = $eventFilters ?? [];
+    $eventFilterOptions = $eventFilterOptions ?? collect();
+    $eventColumns = [
+        'message' => 'Message', 'environment' => 'Environment', 'release' => 'Release',
+        'client_ip' => 'Client IP', 'browser' => 'Browser', 'os' => 'OS', 'server_name' => 'Server', 'level' => 'Level',
+    ];
+    $defaultEventColumns = ['message', 'environment', 'release', 'client_ip', 'browser'];
+    $selectClasses = 'h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900/10';
+@endphp
+
+<div x-data="{
+        columns: @js($eventColumns),
+        visible: @js($defaultEventColumns),
+        storageKey: 'zerrors.issue-event-columns',
+        open: false,
+        init() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(this.storageKey));
+                if (Array.isArray(saved)) this.visible = saved.filter(key => key in this.columns);
+            } catch (e) {}
+        },
+        toggle(key) {
+            this.visible = this.visible.includes(key) ? this.visible.filter(k => k !== key) : [...this.visible, key];
+            try { localStorage.setItem(this.storageKey, JSON.stringify(this.visible)); } catch (e) {}
+        },
+    }">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-medium text-gray-700">All events</h2>
+
+        <div class="relative">
+            <button type="button" @click="open = !open" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-900">
+                <x-lucide-columns-3 class="h-3.5 w-3.5" /> Columns
+            </button>
+            <div x-cloak x-show="open" @click.away="open = false" @keydown.escape.window="open = false"
+                 class="absolute right-0 z-20 mt-1 w-44 space-y-1 rounded-md bg-white p-2 shadow-lg ring-1 ring-black/5">
+                <template x-for="(label, key) in columns" :key="key">
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/10"
+                               :checked="visible.includes(key)" @change="toggle(key)">
+                        <span x-text="label"></span>
+                    </label>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    @unless($isGuest)
+        <form method="GET" action="{{ url()->current() }}" class="mb-3 flex flex-wrap items-center gap-2">
+            <input type="text" name="ip" value="{{ $eventFilters['ip'] ?? '' }}" placeholder="Client IP"
+                   class="h-9 w-36 rounded-md border border-gray-300 px-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
+            @foreach(['browser' => 'Browser', 'os' => 'OS', 'environment' => 'Environment', 'release' => 'Release'] as $filter => $filterLabel)
+                <select name="{{ $filter }}" class="{{ $selectClasses }}">
+                    <option value="">{{ $filterLabel }}: any</option>
+                    @foreach($eventFilterOptions[$filter] ?? [] as $option)
+                        <option value="{{ $option }}" @selected(($eventFilters[$filter] ?? null) === $option)>{{ $option }}</option>
+                    @endforeach
+                </select>
+            @endforeach
+            <x-button type="submit">Filter</x-button>
+            @if($eventFilters)
+                <a href="{{ url()->current() }}" class="text-sm text-gray-500 hover:text-gray-900">Clear</a>
+            @endif
+        </form>
+    @endunless
+
     <x-table>
         <x-table.head>
             <x-table.column>Occurred</x-table.column>
-            <x-table.column>Message</x-table.column>
-            <x-table.column>Environment</x-table.column>
-            <x-table.column>Release</x-table.column>
+            @foreach($eventColumns as $key => $label)
+                <x-table.column x-show="visible.includes('{{ $key }}')">{{ $label }}</x-table.column>
+            @endforeach
         </x-table.head>
         <x-table.body>
-            @foreach($events as $event)
+            @forelse($events as $event)
                 @php($isCurrent = $currentEvent && $event->is($currentEvent))
+                @php($eventUrl = $isGuest ? null : route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]))
                 <x-table.row @class(['bg-indigo-50/60' => $isCurrent])>
-                    @if($isGuest)
-                        <x-table.cell class="whitespace-nowrap">
-                            @if($isCurrent)
-                                <span class="font-medium text-indigo-700"><x-local-time :at="$event->occurred_at" /></span>
-                            @else
-                                <x-local-time :at="$event->occurred_at" />
-                            @endif
-                        </x-table.cell>
-                        <x-table.cell class="max-w-xs truncate">{{ $event->message ?: '—' }}</x-table.cell>
-                    @else
-                        <x-table.cell class="whitespace-nowrap">
-                            <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block text-gray-700 hover:text-gray-900">
-                                @if($isCurrent)
-                                    <span class="font-medium text-indigo-700"><x-local-time :at="$event->occurred_at" /></span>
-                                @else
-                                    <x-local-time :at="$event->occurred_at" />
-                                @endif
-                            </a>
-                        </x-table.cell>
-                        <x-table.cell class="max-w-xs">
-                            <a href="{{ route('organizations.issues.events.show', [$organization, $project, $issue, $event->id]) }}" class="block truncate text-gray-700 hover:text-gray-900">
-                                {{ $event->message ?: '—' }}
-                            </a>
-                        </x-table.cell>
-                    @endif
-                    <x-table.cell class="whitespace-nowrap text-gray-500">{{ $event->environment ?: '—' }}</x-table.cell>
-                    <x-table.cell class="whitespace-nowrap text-gray-500">{{ $event->release ?: '—' }}</x-table.cell>
+                    <x-table.cell class="whitespace-nowrap">
+                        @if($eventUrl) <a href="{{ $eventUrl }}" class="block text-gray-700 hover:text-gray-900"> @endif
+                        <span @class(['font-medium text-indigo-700' => $isCurrent])><x-local-time :at="$event->occurred_at" /></span>
+                        @if($eventUrl) </a> @endif
+                    </x-table.cell>
+                    <x-table.cell class="max-w-xs" x-show="visible.includes('message')">
+                        @if($eventUrl)
+                            <a href="{{ $eventUrl }}" class="block truncate text-gray-700 hover:text-gray-900">{{ $event->message ?: '—' }}</a>
+                        @else
+                            <span class="block truncate">{{ $event->message ?: '—' }}</span>
+                        @endif
+                    </x-table.cell>
+                    @foreach(['environment', 'release', 'client_ip', 'browser', 'os', 'server_name', 'level'] as $key)
+                        <x-table.cell class="whitespace-nowrap text-gray-500" x-show="visible.includes('{{ $key }}')">{{ $event->{$key} ?: '—' }}</x-table.cell>
+                    @endforeach
                 </x-table.row>
-            @endforeach
+            @empty
+                <x-table.row><x-table.cell colspan="9" class="text-center text-gray-400">No events match these filters.</x-table.cell></x-table.row>
+            @endforelse
         </x-table.body>
     </x-table>
 
