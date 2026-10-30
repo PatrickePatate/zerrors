@@ -60,7 +60,7 @@
             @if($eventUser = $event->contextUser())
                 <span class="inline-flex items-center gap-1.5">
                     <x-lucide-user class="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                    {{ $eventUser['email'] ?? $eventUser['username'] ?? ($eventUser['id'] ? 'User #'.$eventUser['id'] : $eventUser['ip_address']) }}
+                    {{ $eventUser['email'] ?? $eventUser['username'] ?? (($eventUser['id'] ?? null) ? 'User #'.$eventUser['id'] : ($eventUser['ip_address'] ?? '')) }}
                 </span>
             @endif
 

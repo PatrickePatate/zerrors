@@ -25,7 +25,17 @@ class FaultEvent extends Model
         'fault_project_id', 'fault_issue_id', 'event_id', 'level', 'message', 'culprit',
         'environment', 'release', 'transaction', 'server_name', 'exception', 'sdk',
         'tags', 'extra', 'contexts', 'request', 'breadcrumbs', 'log_context', 'payload', 'occurred_at',
+        'client_ip', 'browser', 'os',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $event) {
+            $event->client_ip ??= $event->resolveClientIp();
+            $event->browser ??= $event->browserLabel();
+            $event->os ??= $event->osLabel();
+        });
+    }
 
     protected $casts = [
         'exception' => 'array',
@@ -235,6 +245,49 @@ class FaultEvent extends Model
         $userAgent = $this->headerValue('user-agent');
 
         return $userAgent !== null && $this->botLabel($userAgent) !== null;
+    }
+
+    /**
+     * The visitor's IP: the user context's ip_address when the SDK reported a real one
+     * (not Sentry's "{{auto}}" placeholder), else proxy headers, else the server's REMOTE_ADDR.
+     */
+    public function resolveClientIp(): ?string
+    {
+        $candidates = [
+            $this->payload['user']['ip_address'] ?? null,
+            explode(',', (string) $this->headerValue('x-forwarded-for'))[0],
+            $this->headerValue('x-real-ip'),
+            $this->request['env']['REMOTE_ADDR'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = is_string($candidate) ? trim($candidate) : null;
+
+            if ($candidate && filter_var($candidate, FILTER_VALIDATE_IP)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    public function osLabel(): ?string
+    {
+        $userAgent = $this->headerValue('user-agent');
+
+        if (! $userAgent) {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($userAgent, 'Android') => 'Android',
+            str_contains($userAgent, 'iPhone') || str_contains($userAgent, 'iPad') => 'iOS',
+            str_contains($userAgent, 'Windows') => 'Windows',
+            str_contains($userAgent, 'Mac OS X') || str_contains($userAgent, 'Macintosh') => 'macOS',
+            str_contains($userAgent, 'CrOS') => 'ChromeOS',
+            str_contains($userAgent, 'Linux') => 'Linux',
+            default => null,
+        };
     }
 
     private function botLabel(string $userAgent): ?string
