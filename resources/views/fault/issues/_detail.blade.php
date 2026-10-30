@@ -95,6 +95,12 @@
                 @endforeach
             </div>
         </div>
+
+        @if(! empty($eventHistogram))
+            <div class="mt-3"
+                 wire:ignore
+                 x-data="eventHistogramChart(@js($eventHistogram), @js($currentEvent->occurred_at?->timestamp))"></div>
+        @endif
     </x-card>
 @endif
 
