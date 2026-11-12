@@ -7,7 +7,8 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    # Runs on the self-hosted Jogger pool "zerrors-linux-x64" (https://jogger.adieu.ovh).
+    runs-on: [self-hosted, linux, x64]
 
     services:
       redis:
