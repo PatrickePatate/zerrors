@@ -37,6 +37,20 @@
                 </div>
                 <span class="text-xs text-gray-400">Notify when the issue is seen exactly this many times.</span>
             </div>
+
+            @if($channel->rules->firstWhere('trigger', \App\Enums\NotificationRuleTrigger::Spike)?->enabled)
+                <div class="mt-3 grid grid-cols-3 gap-3 border-t border-gray-100 pt-3">
+                    <x-form.text-input label="Window (minutes)" type="number" id="spike-window-{{ $channel->id }}" name="spike-window-{{ $channel->id }}"
+                                        wire:model="spikeInputs.{{ $channel->id }}.window_minutes"
+                                        wire:change="updateSpikeSettings({{ $channel->id }})" />
+                    <x-form.text-input label="Times the 24h average" type="number" id="spike-multiplier-{{ $channel->id }}" name="spike-multiplier-{{ $channel->id }}"
+                                        wire:model="spikeInputs.{{ $channel->id }}.multiplier"
+                                        wire:change="updateSpikeSettings({{ $channel->id }})" />
+                    <x-form.text-input label="Minimum events" type="number" id="spike-min-{{ $channel->id }}" name="spike-min-{{ $channel->id }}"
+                                        wire:model="spikeInputs.{{ $channel->id }}.min_count"
+                                        wire:change="updateSpikeSettings({{ $channel->id }})" />
+                </div>
+            @endif
         </div>
     @empty
         <p class="text-sm text-gray-400">No notification channels configured yet.</p>
@@ -47,7 +61,7 @@
 
         <div class="mt-2 w-48">
             <x-form.select wire:model.live="newChannelType" id="newChannelType"
-                            :options="['slack' => 'Slack', 'telegram' => 'Telegram', 'email' => 'Email']"
+                            :options="['slack' => 'Slack', 'telegram' => 'Telegram', 'email' => 'Email', 'discord' => 'Discord', 'webhook' => 'Webhook']"
                             :selected="$newChannelType" />
         </div>
 
@@ -71,6 +85,17 @@
                                         placeholder="-100123456789" :error="$errors->first('newChatId')" />
                 </div>
                 <p class="text-xs text-gray-400">Message @BotFather to create a bot, then add it to a chat/channel to find the chat ID.</p>
+            @elseif($newChannelType === 'discord')
+                <x-form.text-input label="Discord webhook URL" wire:model="newDiscordWebhookUrl" name="newDiscordWebhookUrl"
+                                    placeholder="https://discord.com/api/webhooks/…" :error="$errors->first('newDiscordWebhookUrl')" />
+            @elseif($newChannelType === 'webhook')
+                <div class="grid grid-cols-2 gap-3">
+                    <x-form.text-input label="Webhook URL" wire:model="newWebhookUrl" name="newWebhookUrl"
+                                        placeholder="https://example.com/hooks/zerrors" :error="$errors->first('newWebhookUrl')" />
+                    <x-form.text-input label="Signing secret (optional)" wire:model="newWebhookSecret" name="newWebhookSecret"
+                                        :error="$errors->first('newWebhookSecret')" />
+                </div>
+                <p class="text-xs text-gray-400">A JSON body is POSTed; with a secret it is signed in the X-Zerrors-Signature header (sha256 HMAC).</p>
             @elseif($newChannelType === 'email')
                 <x-form.text-input label="Alert email" type="email" wire:model="newEmail" name="newEmail"
                                     placeholder="alerts@example.com" :error="$errors->first('newEmail')" />

@@ -5,12 +5,15 @@ namespace App\Livewire;
 use App\Models\Monitor;
 use App\Models\Organization;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class MonitorDetail extends Component
 {
+    #[Locked]
     public Organization $organization;
 
+    #[Locked]
     public Monitor $monitor;
 
     public string $chartStartDate;

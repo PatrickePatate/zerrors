@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Jobs\Fault\SymbolicateFaultEvent;
 use Database\Factories\FaultEventFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class FaultEvent extends Model
 {
@@ -21,11 +25,17 @@ class FaultEvent extends Model
      */
     public const BADGE_COLUMNS = 'fault_events.id,fault_events.fault_issue_id,fault_events.exception,fault_events.request';
 
+    /**
+     * Payload keys persisted in their own columns, and therefore left out of
+     * the `payload` column to avoid storing them twice.
+     */
+    public const PAYLOAD_COLUMN_KEYS = ['exception', 'sdk', 'tags', 'extra', 'contexts', 'request', 'breadcrumbs', 'log_context'];
+
     protected $fillable = [
         'fault_project_id', 'fault_issue_id', 'event_id', 'level', 'message', 'culprit',
         'environment', 'release', 'transaction', 'server_name', 'exception', 'sdk',
         'tags', 'extra', 'contexts', 'request', 'breadcrumbs', 'log_context', 'payload', 'occurred_at',
-        'client_ip', 'browser', 'os',
+        'client_ip', 'browser', 'os', 'user_identifier',
     ];
 
     protected static function booted(): void
@@ -34,6 +44,13 @@ class FaultEvent extends Model
             $event->client_ip ??= $event->resolveClientIp();
             $event->browser ??= $event->browserLabel();
             $event->os ??= $event->osLabel();
+            $event->user_identifier ??= $event->resolveUserIdentifier();
+        });
+
+        static::created(function (self $event) {
+            if ($event->shouldBeSymbolicated()) {
+                SymbolicateFaultEvent::dispatch($event->id);
+            }
         });
     }
 
@@ -46,9 +63,71 @@ class FaultEvent extends Model
         'request' => 'array',
         'breadcrumbs' => 'array',
         'log_context' => 'array',
-        'payload' => 'array',
         'occurred_at' => 'datetime',
     ];
+
+    /**
+     * The full event payload: the stored remainder (user, timestamp, ...)
+     * merged with the dedicated columns. Rows written before payload slimming
+     * still hold the complete payload and are returned as stored.
+     *
+     * @return Attribute<array<string, mixed>, array<string, mixed>|null>
+     */
+    protected function payload(): Attribute
+    {
+        return Attribute::make(
+            get: function (mixed $value): array {
+                $payload = $this->storedPayload($value);
+
+                foreach (self::PAYLOAD_COLUMN_KEYS as $key) {
+                    $column = $this->attributes[$key] ?? null;
+                    $column = is_string($column) ? json_decode($column, true) : $column;
+
+                    if ($column === null || array_key_exists($key, $payload)) {
+                        continue;
+                    }
+
+                    $payload[$key] = $key === 'breadcrumbs' ? ['values' => $column] : $column;
+                }
+
+                return $payload;
+            },
+            set: fn (mixed $value): string => json_encode($value ?? []),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function storedPayload(mixed $value = null): array
+    {
+        $value ??= $this->attributes['payload'] ?? null;
+
+        if (is_string($value)) {
+            $value = json_decode($value, true);
+        }
+
+        return is_array($value) ? $value : [];
+    }
+
+    /**
+     * Whether the project is a JavaScript one with uploaded source maps for
+     * this event's release. The lookup is cached briefly because it runs for
+     * every ingested event.
+     */
+    public function shouldBeSymbolicated(): bool
+    {
+        if (empty($this->release) || empty($this->exception['values'])) {
+            return false;
+        }
+
+        return Cache::remember(
+            SourceMap::existenceCacheKey($this->fault_project_id, $this->release),
+            60,
+            fn (): bool => (bool) $this->project?->platform?->isJavaScript()
+                && SourceMap::where('fault_project_id', $this->fault_project_id)->where('release', $this->release)->exists(),
+        );
+    }
 
     public function project(): BelongsTo
     {
@@ -65,17 +144,46 @@ class FaultEvent extends Model
      */
     public function contextUser(): ?array
     {
-        return $this->payload['user'] ?? null;
+        return $this->storedPayload()['user'] ?? null;
     }
 
     /**
      * Whether the exception was caught and reported by an error handler
      * (true), crashed the process uncaught (false), or the SDK didn't report
-     * it (null), per Sentry's mechanism.handled flag on the first exception value.
+     * it (null), per Sentry's mechanism.handled flag on the exception actually
+     * thrown (the last entry of exception.values).
      */
     public function handled(): ?bool
     {
-        return $this->exception['values'][0]['mechanism']['handled'] ?? null;
+        $values = $this->exception['values'] ?? [];
+
+        return is_array($values) && $values !== []
+            ? (end($values)['mechanism']['handled'] ?? null)
+            : null;
+    }
+
+    /**
+     * Who this event happened to: the user context's id, else email, else
+     * username, else its ip_address / the resolved client IP.
+     */
+    public function resolveUserIdentifier(): ?string
+    {
+        $user = $this->contextUser() ?? [];
+
+        foreach (['id', 'email', 'username'] as $key) {
+            $value = $user[$key] ?? null;
+
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return mb_substr(trim((string) $value), 0, 255);
+            }
+        }
+
+        return $this->resolveClientIp();
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(FaultAttachment::class);
     }
 
     /**
@@ -254,7 +362,7 @@ class FaultEvent extends Model
     public function resolveClientIp(): ?string
     {
         $candidates = [
-            $this->payload['user']['ip_address'] ?? null,
+            $this->storedPayload()['user']['ip_address'] ?? null,
             explode(',', (string) $this->headerValue('x-forwarded-for'))[0],
             $this->headerValue('x-real-ip'),
             $this->request['env']['REMOTE_ADDR'] ?? null,

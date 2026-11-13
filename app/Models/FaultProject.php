@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class FaultProject extends Model
@@ -50,6 +51,14 @@ class FaultProject extends Model
             $project->public_key ??= Str::random(32);
             $project->production_branch ??= 'main';
         });
+
+        static::saved(fn (self $project) => Cache::forget(self::ingestCacheKey($project->id)));
+        static::deleted(fn (self $project) => Cache::forget(self::ingestCacheKey($project->id)));
+    }
+
+    public static function ingestCacheKey(int $projectId): string
+    {
+        return "fault:project:{$projectId}";
     }
 
     public function organization(): BelongsTo
@@ -62,9 +71,19 @@ class FaultProject extends Model
         return $this->hasMany(FaultIssue::class);
     }
 
+    public function cronMonitors(): HasMany
+    {
+        return $this->hasMany(CronMonitor::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(FaultEvent::class);
+    }
+
+    public function sourceMaps(): HasMany
+    {
+        return $this->hasMany(SourceMap::class);
     }
 
     public function releases(): HasMany

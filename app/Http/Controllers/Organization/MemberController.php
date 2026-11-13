@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Organization;
 
+use App\Enums\OrganizationRole;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\User;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MemberController extends Controller
@@ -18,16 +21,15 @@ class MemberController extends Controller
 
     public function updateRole(Request $request, Organization $organization, User $user)
     {
-        $actingRole = $organization->roleFor($request->user());
-        abort_unless(in_array($actingRole, ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
-        $data = $request->validate(['role' => ['required', 'in:owner,admin,member']]);
+        $data = $request->validate(['role' => ['required', Rule::enum(OrganizationRole::class)]]);
         $targetRole = $organization->roleFor($user);
 
         abort_unless($targetRole !== null, 404);
 
         // Admins can promote/demote members but can't touch owners or grant ownership.
-        if ($actingRole !== 'owner' && ($targetRole === 'owner' || $data['role'] === 'owner')) {
+        if (! $request->user()->can('own', $organization) && ($targetRole === 'owner' || $data['role'] === 'owner')) {
             abort(403);
         }
 
@@ -48,10 +50,12 @@ class MemberController extends Controller
 
     public function destroy(Request $request, Organization $organization, User $user)
     {
-        $role = $organization->roleFor($request->user());
-        abort_unless(in_array($role, ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $targetRole = $organization->roleFor($user);
+
+        abort_unless($targetRole !== null, 404);
+        abort_if($targetRole === 'owner' && ! $request->user()->can('own', $organization), 403);
 
         if ($targetRole === 'owner' && $organization->users()->wherePivot('role', 'owner')->count() <= 1) {
             return back()->withErrors(['user' => 'An organization needs at least one owner.']);

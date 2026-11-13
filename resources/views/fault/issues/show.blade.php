@@ -8,7 +8,9 @@
             <x-lucide-arrow-left class="h-4 w-4" /> {{ $project->name }}
         </a>
 
-        <livewire:issue-share-modal :organization="$organization" :project="$project" :issue="$issue" />
+        @can('write', $organization)
+            <livewire:issue-share-modal :organization="$organization" :project="$project" :issue="$issue" />
+        @endcan
     </div>
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">

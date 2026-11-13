@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     public function organizations(): BelongsToMany
     {
-        return $this->belongsToMany(Organization::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Organization::class)->withPivot('role', 'digest_frequency')->withTimestamps();
     }
 
     public function hasTwoFactorEnabled(): bool

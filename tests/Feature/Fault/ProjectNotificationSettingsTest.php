@@ -45,6 +45,8 @@ class ProjectNotificationSettingsTest extends TestCase
 
     public function test_adding_a_channel_validates_its_config(): void
     {
+        Http::fake(['slack.com/api/conversations.list*' => Http::response(['ok' => true, 'channels' => []])]);
+
         $organization = Organization::factory()->withSlackApp()->create();
         $owner = User::factory()->create();
         $organization->users()->attach($owner->id, ['role' => 'owner']);

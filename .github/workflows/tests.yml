@@ -7,8 +7,14 @@ on:
 
 jobs:
   tests:
+    name: Tests (${{ matrix.database }})
     # Runs on the self-hosted Jogger pool "zerrors-linux-x64" (https://jogger.adieu.ovh).
     runs-on: [self-hosted, linux, x64]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pgsql]
 
     services:
       redis:
@@ -21,6 +27,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      # Only started usefully for the pgsql leg; harmless for sqlite.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: zerrors_test
+          POSTGRES_USER: zerrors
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zerrors -d zerrors_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,8 +49,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
-          extensions: mbstring, dom, fileinfo, sqlite, pdo_sqlite, redis
+          php-version: '8.4'
+          extensions: mbstring, dom, fileinfo, sqlite, pdo_sqlite, pdo_pgsql, redis
           coverage: none
 
       - name: Copy .env
@@ -40,6 +61,14 @@ jobs:
 
       - name: Check for security advisories
         run: composer audit
+
+      - name: Check code style (Pint)
+        if: matrix.database == 'sqlite'
+        run: vendor/bin/pint --test
+
+      - name: Static analysis (PHPStan)
+        if: matrix.database == 'sqlite'
+        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -55,5 +84,19 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
-      - name: Run tests
+      - name: Run tests (SQLite)
+        if: matrix.database == 'sqlite'
+        run: php artisan test --compact
+
+      # phpunit.xml sets DB_* with plain <env> (no force="true"), so real
+      # environment variables take precedence over it.
+      - name: Run tests (PostgreSQL)
+        if: matrix.database == 'pgsql'
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: zerrors_test
+          DB_USERNAME: zerrors
+          DB_PASSWORD: secret
         run: php artisan test --compact

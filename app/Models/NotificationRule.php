@@ -29,6 +29,23 @@ class NotificationRule extends Model
     }
 
     /**
+     * Spike settings (stored in the `thresholds` JSON column as a keyed array),
+     * merged over the defaults.
+     *
+     * @return array{window_minutes: int, multiplier: int, min_count: int}
+     */
+    public function spikeSettings(): array
+    {
+        $stored = $this->trigger === NotificationRuleTrigger::Spike && is_array($this->thresholds) ? $this->thresholds : [];
+
+        return [
+            'window_minutes' => max(1, (int) ($stored['window_minutes'] ?? 5)),
+            'multiplier' => max(1, (int) ($stored['multiplier'] ?? 10)),
+            'min_count' => max(1, (int) ($stored['min_count'] ?? 20)),
+        ];
+    }
+
+    /**
      * Whether this rule applies to the issue's current occurrence count.
      * Only meaningful for the occurrence_threshold trigger; every other
      * trigger applies unconditionally once matched by type.
@@ -39,6 +56,6 @@ class NotificationRule extends Model
             return true;
         }
 
-        return in_array($issue->times_seen, $this->thresholds ?? [], true);
+        return in_array($issue->times_seen, array_values($this->thresholds ?? []), true);
     }
 }

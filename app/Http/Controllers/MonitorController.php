@@ -6,16 +6,20 @@ use App\Enums\MonitorHttpMethod;
 use App\Enums\MonitorType;
 use App\Models\Monitor;
 use App\Models\Organization;
+use App\Support\Net\OutboundUrlGuard;
 use App\Support\Organization\AuditLogger;
+use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class MonitorController extends Controller
 {
     public function index(Request $request, Organization $organization): View
     {
-        abort_unless($organization->roleFor($request->user()) !== null, 403);
+        Gate::authorize('view', $organization);
 
         $monitors = $organization->monitors()
             ->with('project')
@@ -36,7 +40,7 @@ class MonitorController extends Controller
 
     public function create(Request $request, Organization $organization): View
     {
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         return view('monitors.create', [
             'organization' => $organization,
@@ -46,7 +50,7 @@ class MonitorController extends Controller
 
     public function store(Request $request, Organization $organization)
     {
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $data = $this->validateData($request, $organization);
 
@@ -64,7 +68,7 @@ class MonitorController extends Controller
     public function show(Request $request, Organization $organization, Monitor $monitor): View
     {
         abort_unless($monitor->organization_id === $organization->id, 404);
-        abort_unless($organization->roleFor($request->user()) !== null, 403);
+        Gate::authorize('view', $organization);
 
         return view('monitors.show', [
             'organization' => $organization,
@@ -75,7 +79,7 @@ class MonitorController extends Controller
     public function edit(Request $request, Organization $organization, Monitor $monitor): View
     {
         abort_unless($monitor->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         return view('monitors.edit', [
             'organization' => $organization,
@@ -87,7 +91,7 @@ class MonitorController extends Controller
     public function update(Request $request, Organization $organization, Monitor $monitor)
     {
         abort_unless($monitor->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $data = $this->validateData($request, $organization);
 
@@ -102,7 +106,7 @@ class MonitorController extends Controller
     public function destroy(Request $request, Organization $organization, Monitor $monitor)
     {
         abort_unless($monitor->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $request->validate([
             'confirm_name' => ['required', 'string'],
@@ -131,7 +135,7 @@ class MonitorController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'project_id' => ['nullable', 'integer', Rule::exists('fault_projects', 'id')->where('organization_id', $organization->id)],
             'type' => ['required', Rule::enum(MonitorType::class)],
-            'url' => ['required', 'string', 'max:2048'],
+            'url' => ['required', 'string', 'max:2048', $this->outboundTargetRule($request)],
             'http_method' => ['nullable', Rule::enum(MonitorHttpMethod::class)],
             'check_interval_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
             'timeout_seconds' => ['required', 'integer', 'min:1', 'max:120'],
@@ -156,6 +160,31 @@ class MonitorController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
 
         return $data;
+    }
+
+    /**
+     * Rejects targets the server must not connect to (loopback, LAN, cloud
+     * metadata, ...). Ping monitors store a bare host; the others store a URL.
+     */
+    protected function outboundTargetRule(Request $request): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+            if (! is_string($value)) {
+                return;
+            }
+
+            $guard = app(OutboundUrlGuard::class);
+
+            try {
+                if (MonitorType::tryFrom((string) $request->input('type')) === MonitorType::Ping) {
+                    $guard->assertAllowedHost($value);
+                } else {
+                    $guard->assertAllowedUrl($value);
+                }
+            } catch (InvalidArgumentException $e) {
+                $fail($e->getMessage());
+            }
+        };
     }
 
     /**

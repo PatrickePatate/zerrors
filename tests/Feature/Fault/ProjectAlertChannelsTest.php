@@ -138,6 +138,7 @@ class ProjectAlertChannelsTest extends TestCase
     public function test_an_every_event_rule_fires_on_every_occurrence(): void
     {
         Http::fake();
+        config(['fault.alert_cooldown_seconds' => 0]);
 
         $organization = Organization::factory()->withSlackApp()->create(['alerts_enabled' => false]);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);

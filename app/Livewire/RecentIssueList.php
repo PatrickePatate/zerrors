@@ -2,13 +2,19 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesOrganizationAccess;
 use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\Organization;
+use App\Support\Fault\IssueWorkflow;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class RecentIssueList extends Component
 {
+    use AuthorizesOrganizationAccess;
+
+    #[Locked]
     public Organization $organization;
 
     public int $limit = 10;
@@ -23,8 +29,15 @@ class RecentIssueList extends Component
     {
         abort_unless(in_array($status, ['unresolved', 'resolved', 'ignored'], true), 422);
 
+        $this->authorizeMember();
         $issue = $this->issueQuery()->findOrFail($issueId);
-        $issue->update(['status' => $status]);
+        $workflow = app(IssueWorkflow::class);
+
+        match ($status) {
+            'resolved' => $workflow->resolve($this->organization, $issue, auth()->user()),
+            'ignored' => $workflow->ignore($this->organization, $issue, auth()->user()),
+            'unresolved' => $workflow->unresolve($this->organization, $issue, auth()->user()),
+        };
     }
 
     public function assignIssue(int $issueId, ?int $userId): void
@@ -33,8 +46,13 @@ class RecentIssueList extends Component
             return;
         }
 
-        $issue = $this->issueQuery()->findOrFail($issueId);
-        $issue->update(['assigned_to_user_id' => $userId]);
+        $this->authorizeMember();
+        app(IssueWorkflow::class)->assign($this->organization, $this->issueQuery()->findOrFail($issueId), auth()->user(), $userId);
+    }
+
+    protected function authorizeMember(): void
+    {
+        $this->authorizeWrite($this->organization);
     }
 
     protected function issueQuery()

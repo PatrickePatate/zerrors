@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\FaultIssue;
 use App\Models\FaultProject;
+use App\Models\Release;
+use App\Models\ReleaseCommit;
+use App\Support\Fault\IssueWorkflow;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,7 +18,7 @@ class GithubWebhookController extends Controller
     /**
      * Receives GitHub's "push" webhook, App-wide. Configured once on the GitHub
      * App itself (Payload URL: /api/webhooks/github, Content type: application/json,
-     * Secret: services.github.webhook_secret, event: "Just the push event").
+     * Secret: services.github.webhook_secret, events: "push" and "issues").
      *
      * A release is recorded automatically whenever a commit lands on the
      * project's configured production branch (which is what a merged PR
@@ -27,11 +32,25 @@ class GithubWebhookController extends Controller
             return response()->json(['message' => 'pong']);
         }
 
-        abort_unless($request->header('X-GitHub-Event') === 'push', Response::HTTP_BAD_REQUEST, 'Unsupported event');
+        $event = $request->header('X-GitHub-Event');
+
+        if (! in_array($event, ['push', 'issues'], true)) {
+            return response()->json(['message' => 'Ignored: unsupported event.']);
+        }
+
+        $delivery = $request->header('X-GitHub-Delivery');
+
+        if ($delivery && ! Cache::add("github-webhook-delivery:{$delivery}", true, now()->addMinutes(10))) {
+            return response()->json(['message' => 'Ignored: duplicate delivery.']);
+        }
 
         $payload = $this->payload($request);
 
         $project = $this->resolveProject($payload);
+
+        if ($event === 'issues') {
+            return $this->handleIssues($payload, $project);
+        }
 
         $branch = Str::after((string) ($payload['ref'] ?? ''), 'refs/heads/');
 
@@ -55,7 +74,77 @@ class GithubWebhookController extends Controller
             ]
         );
 
+        $this->storeCommits($release, $payload['commits'] ?? []);
+
         return response()->json(['release' => $release->version], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Mirrors closing/reopening of a Zerrors-created GitHub issue onto the
+     * Zerrors issue. Saved quietly so the status observer does not call GitHub back.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function handleIssues(array $payload, FaultProject $project)
+    {
+        $status = match ($payload['action'] ?? null) {
+            'closed' => 'resolved',
+            'reopened' => 'unresolved',
+            default => null,
+        };
+
+        $number = $payload['issue']['number'] ?? null;
+
+        $issue = $status && $number
+            ? FaultIssue::where('fault_project_id', $project->id)->where('github_issue_number', $number)->first()
+            : null;
+
+        if ($issue === null) {
+            return response()->json(['message' => 'Ignored.']);
+        }
+
+        if ($issue->status !== $status) {
+            $workflow = app(IssueWorkflow::class)->quietly('github');
+
+            match ($status) {
+                'resolved' => $workflow->resolve($project->organization, $issue, null),
+                'unresolved' => $workflow->unresolve($project->organization, $issue, null),
+            };
+        }
+
+        return response()->json(['issue' => $issue->id, 'status' => $issue->status]);
+    }
+
+    /**
+     * @param  array<int, mixed>  $commits
+     */
+    protected function storeCommits(Release $release, array $commits): void
+    {
+        $rows = [];
+
+        foreach (array_slice($commits, 0, 100) as $commit) {
+            if (! is_array($commit) || empty($commit['id'])) {
+                continue;
+            }
+
+            $rows[] = [
+                'release_id' => $release->id,
+                'sha' => $commit['id'],
+                'message' => $commit['message'] ?? null,
+                'author' => $commit['author']['name'] ?? null,
+                'url' => $commit['url'] ?? null,
+                'files' => json_encode(array_values(array_unique(array_merge(
+                    $commit['added'] ?? [], $commit['modified'] ?? [], $commit['removed'] ?? []
+                )))),
+                'committed_at' => $commit['timestamp'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if ($rows !== []) {
+            ReleaseCommit::upsert($rows, ['release_id', 'sha'], ['message', 'author', 'url', 'files', 'committed_at', 'updated_at']);
+        }
     }
 
     /**

@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SecurityController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Fault\AttachmentController;
+use App\Http\Controllers\Fault\CronMonitorController;
 use App\Http\Controllers\Fault\DashboardController;
 use App\Http\Controllers\Fault\IssueController;
 use App\Http\Controllers\Fault\PublicIssueController;
@@ -18,10 +20,15 @@ use App\Http\Controllers\Organization\AuditLogController;
 use App\Http\Controllers\Organization\InviteController;
 use App\Http\Controllers\Organization\MemberController;
 use App\Http\Controllers\Organization\SettingsController;
+use App\Http\Controllers\Organization\StatusPageAdminController;
 use App\Http\Controllers\Organization\SwitchController;
+use App\Http\Controllers\StatusPageController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
+
+Route::get('/status/{slug}.json', [StatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->name('status.json');
+Route::get('/status/{slug}', [StatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('status.show');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -90,7 +97,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/projects/{project:slug}/issues/{issue}/deepen', [IssueController::class, 'deepen'])->name('organizations.issues.deepen');
         Route::post('/projects/{project:slug}/issues/{issue}/github', [IssueController::class, 'createGithubIssue'])->name('organizations.issues.github');
 
+        Route::get('/projects/{project:slug}/crons', [CronMonitorController::class, 'index'])->name('organizations.crons.index');
+        Route::get('/projects/{project:slug}/attachments/{attachment}', [AttachmentController::class, 'download'])->name('organizations.attachments.download');
+
         Route::get('/monitoring', [MonitorController::class, 'index'])->name('organizations.monitors.index');
+        Route::get('/monitoring/status-page', [StatusPageAdminController::class, 'edit'])->name('organizations.status-page.edit');
         Route::get('/monitoring/create', [MonitorController::class, 'create'])->name('organizations.monitors.create');
         Route::post('/monitoring', [MonitorController::class, 'store'])->name('organizations.monitors.store');
         Route::get('/monitoring/{monitor}', [MonitorController::class, 'show'])->name('organizations.monitors.show');

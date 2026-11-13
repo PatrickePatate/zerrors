@@ -74,7 +74,7 @@
             @endif
         </div>
 
-        @if($organization->hasAiConfigured())
+        @if($organization->hasAiConfigured() && auth()->user()?->can('write', $organization))
             <div class="mt-4 flex items-stretch gap-2">
                 <button
                     type="button"

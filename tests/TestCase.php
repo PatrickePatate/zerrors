@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 
 abstract class TestCase extends BaseTestCase
@@ -10,6 +11,8 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Http::preventStrayRequests();
 
         // Tests use a dedicated Redis database (see phpunit.xml), but it isn't
         // reset between tests the way RefreshDatabase resets the database

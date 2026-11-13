@@ -10,7 +10,7 @@
         "blade-ui-kit/blade-icons": "^1.10",
         "codeat3/blade-devicons": "^1.9",
         "firebase/php-jwt": "^7.1",
-        "laravel/ai": "^0.11.2",
+        "laravel/ai": "^1.0",
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.49",
         "laravel/octane": "^2.19",
@@ -23,7 +23,8 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/boost": "^2.8",
+        "larastan/larastan": "^3.15",
+        "laravel/boost": "^2.10",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
@@ -55,6 +56,9 @@
         "dev": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
+        ],
+        "analyse": [
+            "vendor/bin/phpstan analyse --memory-limit=1G"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

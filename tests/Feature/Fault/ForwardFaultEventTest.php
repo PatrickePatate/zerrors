@@ -4,6 +4,7 @@ namespace Tests\Feature\Fault;
 
 use App\Jobs\Fault\ForwardFaultEvent;
 use App\Models\FaultProject;
+use App\Support\Net\OutboundUrlGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -11,6 +12,30 @@ use Tests\TestCase;
 class ForwardFaultEventTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('monitoring.allow_private_targets', false);
+        $this->app->instance(OutboundUrlGuard::class, new OutboundUrlGuard(
+            fn (string $host): array => $host === 'internal.test' ? ['10.0.0.5'] : ['93.184.216.34'],
+        ));
+    }
+
+    public function test_it_does_not_post_to_a_private_target(): void
+    {
+        Http::fake();
+
+        $project = FaultProject::factory()->create([
+            'forward_enabled' => true,
+            'forward_dsn' => 'https://abc123@internal.test/456',
+        ]);
+
+        (new ForwardFaultEvent($project->id, 'a0000000000000000000000000000000', ['message' => 'boom']))->handle();
+
+        Http::assertNothingSent();
+    }
 
     public function test_it_posts_the_event_to_the_configured_dsn_envelope_endpoint(): void
     {

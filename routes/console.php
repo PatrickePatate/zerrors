@@ -20,3 +20,7 @@ Schedule::command('zerrors:prune-events')->daily();
 Schedule::command('monitoring:dispatch-checks')->everyMinute()->withoutOverlapping();
 Schedule::command('monitoring:compact-checks')->daily();
 Schedule::command('monitoring:prune-checks')->dailyAt('01:00');
+Schedule::command('monitoring:detect-missed-check-ins')->everyMinute()->withoutOverlapping();
+Schedule::command('zerrors:send-digests daily')->dailyAt('08:00');
+Schedule::command('zerrors:send-digests weekly')->weeklyOn(1, '08:00');
+Schedule::command('fault:unsnooze-issues')->everyFiveMinutes();
