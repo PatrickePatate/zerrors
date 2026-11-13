@@ -40,10 +40,10 @@ class ProcessFaultEventRetryAndLeakTest extends TestCase
             }
         });
 
-        (new ProcessFaultEvent($project->id, 'dupevent0001', $payload))->handle();
+        (new ProcessFaultEvent($project->id, '11111111-1111-4111-8111-111111111111', $payload))->handle();
 
         $issue = FaultIssue::where('fault_project_id', $project->id)->firstOrFail();
-        $this->assertSame(1, FaultEvent::where('event_id', 'dupevent0001')->count());
+        $this->assertSame(1, FaultEvent::where('event_id', '11111111-1111-4111-8111-111111111111')->count());
         $this->assertSame(0, (int) Redis::connection()->get("fault:issue:{$issue->id}:pending_count"));
         $this->assertSame(0, Redis::connection()->pfcount("fault:issue:{$issue->id}:users"));
         Bus::assertNotDispatched(ForwardFaultEvent::class);
@@ -54,8 +54,8 @@ class ProcessFaultEventRetryAndLeakTest extends TestCase
         $project = FaultProject::factory()->create();
         $payload = ['level' => 'error', 'fingerprint' => ['retry'], 'exception' => ['values' => [['type' => 'E', 'value' => 'x']]]];
 
-        (new ProcessFaultEvent($project->id, 'retryevent01', $payload))->handle();
-        (new ProcessFaultEvent($project->id, 'retryevent01', $payload))->handle();
+        (new ProcessFaultEvent($project->id, '22222222-2222-4222-8222-222222222222', $payload))->handle();
+        (new ProcessFaultEvent($project->id, '22222222-2222-4222-8222-222222222222', $payload))->handle();
 
         $issue = FaultIssue::where('fault_project_id', $project->id)->firstOrFail();
         $this->assertSame(1, (int) Redis::connection()->get("fault:issue:{$issue->id}:pending_count"));
