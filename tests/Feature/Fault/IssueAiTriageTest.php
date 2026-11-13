@@ -2,7 +2,8 @@
 
 namespace Tests\Feature\Fault;
 
-use App\Ai\Agents\IssueTriageAgent;
+use App\Enums\TriageCategory;
+use App\Enums\TriagePriority;
 use App\Jobs\Fault\TriageFaultIssue;
 use App\Livewire\IssueTriage;
 use App\Models\FaultIssue;
@@ -13,6 +14,9 @@ use App\Support\Ai\IssueTriager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
+use Laravel\Ai\Classification;
+use Laravel\Ai\Prompts\ClassificationPrompt;
+use Laravel\Ai\Responses\Data\ChoiceAnswer;
 use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
@@ -40,9 +44,20 @@ class IssueAiTriageTest extends TestCase
         return $quietly ? $factory->createQuietly($attributes) : $factory->create($attributes);
     }
 
-    public function test_json_output_is_stored(): void
+    /**
+     * @param  array<string, string>  $labels
+     */
+    protected function fakeLabels(array $labels = ['category' => 'database', 'priority' => 'high']): void
     {
-        IssueTriageAgent::fake(['{"category": "database", "priority": "High"}']);
+        Classification::fake(fn (ClassificationPrompt $prompt) => [
+            'category' => new ChoiceAnswer($labels['category'], [$labels['category'] => 0.9], 0.9),
+            'priority' => new ChoiceAnswer($labels['priority'], [$labels['priority'] => 0.8], 0.8),
+        ])->preventStrayClassifications();
+    }
+
+    public function test_labels_are_stored_using_the_default_provider_and_model(): void
+    {
+        $this->fakeLabels();
         $issue = $this->issueFor();
 
         (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
@@ -50,40 +65,38 @@ class IssueAiTriageTest extends TestCase
         $issue->refresh();
         $this->assertSame('database', $issue->triage_category);
         $this->assertSame('high', $issue->triage_priority);
-        $this->assertSame('~typesafe/jev-latest', $issue->triage_model);
+        $this->assertSame('jev-latest', $issue->triage_model);
         $this->assertNotNull($issue->triaged_at);
         $this->assertNull($issue->triage_error);
+        Classification::assertClassified(fn (ClassificationPrompt $prompt) => $prompt->provider->name() === 'typesafe'
+            && $prompt->model === 'jev-latest'
+            && array_keys($prompt->questions) === ['category', 'priority']
+            && array_keys($prompt->questions['category']->options) === array_column(TriageCategory::cases(), 'value')
+            && array_keys($prompt->questions['priority']->options) === array_column(TriagePriority::cases(), 'value'));
     }
 
-    public function test_bare_text_output_is_parsed(): void
+    public function test_unusable_label_records_an_error_and_does_not_fall_back(): void
     {
-        IssueTriageAgent::fake(['code_bug, CRITICAL']);
+        $this->fakeLabels(['category' => 'something_else', 'priority' => 'low']);
         $issue = $this->issueFor();
 
-        (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
-
-        $this->assertSame('code_bug', $issue->fresh()->triage_category);
-        $this->assertSame('critical', $issue->fresh()->triage_priority);
-    }
-
-    public function test_unknown_output_leaves_labels_null(): void
-    {
-        IssueTriageAgent::fake(['I have no idea']);
-        $issue = $this->issueFor();
-
-        (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
+        try {
+            (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
+            $this->fail('Expected the failure to be rethrown.');
+        } catch (RuntimeException) {
+        }
 
         $issue->refresh();
         $this->assertNull($issue->triage_category);
-        $this->assertNull($issue->triage_priority);
-        $this->assertNotNull($issue->triaged_at);
+        $this->assertNull($issue->triaged_at);
+        $this->assertNotNull($issue->triage_error);
     }
 
     public function test_provider_error_is_recorded_without_falling_back_to_another_model(): void
     {
         $requested = [];
-        IssueTriageAgent::fake(function (string $prompt, $attachments, $provider, string $model) use (&$requested) {
-            $requested[] = [$provider->name(), $model];
+        Classification::fake(function (ClassificationPrompt $prompt) use (&$requested) {
+            $requested[] = [$prompt->provider->name(), $prompt->model];
 
             throw new RuntimeException('Unknown model');
         });
@@ -98,23 +111,28 @@ class IssueAiTriageTest extends TestCase
         $issue->refresh();
         $this->assertSame('Unknown model', $issue->triage_error);
         $this->assertNull($issue->triaged_at);
-        $this->assertSame([['openrouter', '~typesafe/jev-latest']], $requested);
+        $this->assertSame([['typesafe', 'jev-latest']], $requested);
     }
 
-    public function test_organization_model_override_is_sent_as_is(): void
+    public function test_organization_provider_and_model_override_are_sent_as_is(): void
     {
-        $requested = null;
-        IssueTriageAgent::fake(function (string $prompt, $attachments, $provider, string $model) use (&$requested) {
-            $requested = $model;
-
-            return '{"category":"noise","priority":"low"}';
-        });
-        $issue = $this->issueFor(['ai_triage_model' => '~acme/custom']);
+        $this->fakeLabels(['category' => 'noise', 'priority' => 'low']);
+        $issue = $this->issueFor(['ai_triage_provider' => 'openrouter', 'ai_triage_model' => '~acme/custom']);
 
         (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
 
-        $this->assertSame('~acme/custom', $requested);
+        Classification::assertClassified(fn (ClassificationPrompt $prompt) => $prompt->provider->name() === 'openrouter' && $prompt->model === '~acme/custom');
         $this->assertSame('~acme/custom', $issue->fresh()->triage_model);
+    }
+
+    public function test_openrouter_uses_the_jev_default_model(): void
+    {
+        $this->fakeLabels();
+        $issue = $this->issueFor(['ai_triage_provider' => 'openrouter']);
+
+        (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
+
+        Classification::assertClassified(fn (ClassificationPrompt $prompt) => $prompt->provider->name() === 'openrouter' && $prompt->model === '~typesafe/jev-latest');
     }
 
     public function test_key_selection(): void
@@ -127,19 +145,21 @@ class IssueAiTriageTest extends TestCase
         ]);
         $none = Organization::factory()->make(['ai_provider' => 'anthropic', 'ai_api_key' => 'sk-ant', 'ai_triage_enabled' => true]);
 
+        $onOpenRouter->ai_triage_provider = 'openrouter';
         $this->assertSame('sk-or-general', $onOpenRouter->aiTriageKey());
         $this->assertSame('sk-or-triage', $other->aiTriageKey());
+        $this->assertSame('sk-or-triage', $onOpenRouter->replicate()->fill(['ai_triage_provider' => 'typesafe'])->aiTriageKey());
         $this->assertFalse($none->canTriageIssues());
     }
 
     public function test_job_is_idempotent_and_rate_limited(): void
     {
-        IssueTriageAgent::fake(['{"category":"noise","priority":"low"}']);
+        $this->fakeLabels();
         $triaged = $this->issueFor();
         $triaged->forceFill(['triaged_at' => now()])->saveQuietly();
 
         (new TriageFaultIssue($triaged->id))->handle(app(IssueTriager::class));
-        IssueTriageAgent::assertNotPrompted(fn () => true);
+        Classification::assertNothingClassified();
 
         $issue = $this->issueFor();
         config(['fault.ai_triage_hourly_limit' => 1]);
@@ -148,7 +168,7 @@ class IssueAiTriageTest extends TestCase
         (new TriageFaultIssue($issue->id))->handle(app(IssueTriager::class));
 
         $this->assertNull($issue->fresh()->triaged_at);
-        IssueTriageAgent::assertNotPrompted(fn () => true);
+        Classification::assertNothingClassified();
     }
 
     public function test_observer_dispatches_only_when_triage_is_available(): void
@@ -195,7 +215,7 @@ class IssueAiTriageTest extends TestCase
 
     public function test_rerun_triage_component_updates_labels(): void
     {
-        IssueTriageAgent::fake(['{"category":"configuration","priority":"medium"}']);
+        $this->fakeLabels(['category' => 'configuration', 'priority' => 'medium']);
         $issue = $this->issueFor();
         $owner = User::factory()->create();
         $issue->project->organization->users()->attach($owner->id, ['role' => 'member']);

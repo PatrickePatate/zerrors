@@ -27,7 +27,8 @@ class AiTriageSettingsTest extends TestCase
         [$organization, $owner] = $this->organizationWithRole('owner');
 
         Livewire::actingAs($owner)->test(OrganizationAiSettings::class, ['organization' => $organization])
-            ->assertSet('aiTriageModel', '~typesafe/jev-latest')
+            ->assertSet('aiTriageProvider', 'typesafe')
+            ->assertSet('aiTriageModel', '')
             ->set('aiProvider', 'anthropic')
             ->set('aiTriageEnabled', true)
             ->set('aiTriageApiKey', 'sk-or-secret')
@@ -38,20 +39,37 @@ class AiTriageSettingsTest extends TestCase
         $organization->refresh();
         $this->assertTrue($organization->ai_triage_enabled);
         $this->assertNull($organization->ai_triage_model);
+        $this->assertNull($organization->ai_triage_provider);
         $this->assertSame('sk-or-secret', $organization->ai_triage_api_key);
     }
 
-    public function test_key_field_is_hidden_for_openrouter_and_custom_model_is_saved(): void
+    public function test_key_field_is_hidden_when_reusing_the_general_key_and_custom_provider_and_model_are_saved(): void
     {
         [$organization, $owner] = $this->organizationWithRole('admin');
 
         Livewire::actingAs($owner)->test(OrganizationAiSettings::class, ['organization' => $organization])
             ->set('aiProvider', 'openrouter')
+            ->assertSee('TypeSafe (Jev) API key')
+            ->set('aiTriageProvider', 'openrouter')
             ->assertDontSee('OpenRouter API key')
             ->set('aiTriageModel', '~acme/custom')
-            ->call('save');
+            ->call('save')
+            ->assertHasNoErrors();
 
-        $this->assertSame('~acme/custom', $organization->fresh()->ai_triage_model);
+        $organization->refresh();
+        $this->assertSame('openrouter', $organization->ai_triage_provider);
+        $this->assertSame('~acme/custom', $organization->ai_triage_model);
+    }
+
+    public function test_unsupported_triage_provider_is_rejected(): void
+    {
+        [$organization, $owner] = $this->organizationWithRole('owner');
+
+        Livewire::actingAs($owner)->test(OrganizationAiSettings::class, ['organization' => $organization])
+            ->set('aiProvider', 'openai')
+            ->set('aiTriageProvider', 'anthropic')
+            ->call('save')
+            ->assertHasErrors(['aiTriageProvider']);
     }
 
     public function test_validation_and_authorization(): void

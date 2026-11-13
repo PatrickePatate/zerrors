@@ -89,12 +89,16 @@ return [
     | AI Triage
     |--------------------------------------------------------------------------
     |
-    | Default OpenRouter model ID used to classify new issues (sent as-is) and
-    | the maximum number of automatic triages per organization per hour.
+    | Default AI SDK classification provider (typesafe, openrouter or openai),
+    | optional model ID override sent as-is (blank uses the provider's own
+    | default, Jev for TypeSafe and OpenRouter), and the maximum number of
+    | automatic triages per organization per hour.
     |
     */
 
-    'ai_triage_model' => env('FAULT_AI_TRIAGE_MODEL', '~typesafe/jev-latest'),
+    'ai_triage_provider' => env('FAULT_AI_TRIAGE_PROVIDER', 'typesafe'),
+
+    'ai_triage_model' => env('FAULT_AI_TRIAGE_MODEL'),
 
     'ai_triage_hourly_limit' => (int) env('FAULT_AI_TRIAGE_HOURLY_LIMIT', 60),
 

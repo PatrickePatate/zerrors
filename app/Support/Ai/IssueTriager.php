@@ -2,48 +2,60 @@
 
 namespace App\Support\Ai;
 
-use App\Ai\Agents\IssueTriageAgent;
+use App\Enums\TriageCategory;
+use App\Enums\TriagePriority;
 use App\Models\FaultIssue;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
+use Laravel\Ai\Classification;
+use Laravel\Ai\Classification\Choice;
+use Laravel\Ai\Responses\Data\ChoiceAnswer;
 use RuntimeException;
 use Throwable;
 
 class IssueTriager
 {
-    public function __construct(protected TriageResultParser $parser) {}
-
     /**
-     * Classify an issue through OpenRouter using the configured triage model
-     * and store the labels on it. On failure the error is recorded on the
-     * issue and rethrown; no other model is ever substituted.
+     * Classify an issue through the AI SDK's classification API using the
+     * organization's triage provider and model, and store the labels on it.
+     * On failure the error is recorded on the issue and rethrown; no other
+     * provider or model is ever substituted.
      */
     public function triage(FaultIssue $issue): void
     {
         $organization = $issue->project->organization;
         $key = $organization->aiTriageKey();
+        $provider = $organization->aiTriageProvider();
 
         if ($key === null) {
-            throw new RuntimeException('No OpenRouter key is available for triage.');
+            throw new RuntimeException("No {$provider} key is available for triage.");
         }
 
         $modelId = $organization->aiTriageModelId();
 
-        Config::set('ai.providers.openrouter', ['driver' => 'openrouter', 'key' => $key]);
+        Config::set("ai.providers.{$provider}", ['driver' => $provider, 'key' => $key]);
 
         try {
-            $response = (new IssueTriageAgent)->prompt(
-                $this->describe($issue),
-                provider: 'openrouter',
-                model: $modelId,
-                timeout: 30,
-            );
+            $response = Classification::of($this->describe($issue))
+                ->question('category', new Choice(
+                    'What kind of problem does this application error represent?',
+                    $this->options(TriageCategory::class),
+                ))
+                ->question('priority', new Choice(
+                    'How urgently should this application error be fixed?',
+                    $this->options(TriagePriority::class),
+                ))
+                ->timeout(30)
+                ->classify($provider, $modelId);
 
-            $result = $this->parser->parse($response->text);
+            $category = $this->choice($response->answer('category'), TriageCategory::class);
+            $priority = $this->choice($response->answer('priority'), TriagePriority::class);
+
+            $modelId = $response->meta->model ?? $modelId;
 
             $issue->forceFill([
-                'triage_category' => $result['category']?->value,
-                'triage_priority' => $result['priority']?->value,
+                'triage_category' => $category->value,
+                'triage_priority' => $priority->value,
                 'triage_model' => $modelId,
                 'triaged_at' => now(),
                 'triage_error' => null,
@@ -56,6 +68,32 @@ class IssueTriager
 
             throw $exception;
         }
+    }
+
+    /**
+     * The enum values as classification options, each with its label.
+     *
+     * @param  class-string<TriageCategory|TriagePriority>  $enum
+     * @return array<string, string>
+     */
+    protected function options(string $enum): array
+    {
+        return collect($enum::cases())
+            ->mapWithKeys(fn (TriageCategory|TriagePriority $case): array => [$case->value => $case->label()])
+            ->all();
+    }
+
+    /**
+     * @template T of TriageCategory|TriagePriority
+     *
+     * @param  class-string<T>  $enum
+     * @return T
+     */
+    protected function choice(mixed $answer, string $enum): TriageCategory|TriagePriority
+    {
+        $case = $answer instanceof ChoiceAnswer ? $enum::tryFrom($answer->choice) : null;
+
+        return $case ?? throw new RuntimeException('The classifier returned no usable label.');
     }
 
     /**

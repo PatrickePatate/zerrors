@@ -17,7 +17,7 @@ class Organization extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'ai_deep_model', 'ai_triage_enabled', 'ai_triage_model', 'ai_triage_api_key', 'alerts_enabled',
+        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'ai_deep_model', 'ai_triage_enabled', 'ai_triage_provider', 'ai_triage_model', 'ai_triage_api_key', 'alerts_enabled',
         'require_2fa', 'github_installation_id', 'github_account_login', 'github_account_type',
         'github_connected_at', 'slack_team_id', 'slack_team_name', 'slack_bot_token',
         'slack_authed_user_id', 'slack_connected_at',
@@ -46,6 +46,15 @@ class Organization extends Model
         'anthropic' => 'Anthropic',
         'mistral' => 'Mistral',
         'openrouter' => 'OpenRouter',
+    ];
+
+    /**
+     * Providers the AI SDK can run classification on.
+     */
+    public const AI_TRIAGE_PROVIDERS = [
+        'typesafe' => 'TypeSafe (Jev)',
+        'openrouter' => 'OpenRouter',
+        'openai' => 'OpenAI',
     ];
 
     protected static function booted(): void
@@ -117,12 +126,22 @@ class Organization extends Model
     }
 
     /**
-     * The OpenRouter key used for triage: the organization's own provider key
-     * when it is on OpenRouter, otherwise the dedicated triage key.
+     * The AI SDK provider that classifies issues for this organization.
+     */
+    public function aiTriageProvider(): string
+    {
+        $provider = $this->ai_triage_provider ?: (string) config('fault.ai_triage_provider');
+
+        return array_key_exists($provider, self::AI_TRIAGE_PROVIDERS) ? $provider : 'typesafe';
+    }
+
+    /**
+     * The key used for triage: the organization's own provider key when it is
+     * on the triage provider, otherwise the dedicated triage key.
      */
     public function aiTriageKey(): ?string
     {
-        $key = $this->ai_provider === 'openrouter' ? $this->ai_api_key : $this->ai_triage_api_key;
+        $key = $this->ai_provider === $this->aiTriageProvider() ? $this->ai_api_key : $this->ai_triage_api_key;
 
         return filled($key) ? $key : null;
     }
@@ -133,11 +152,12 @@ class Organization extends Model
     }
 
     /**
-     * The model ID sent to OpenRouter as-is for triage.
+     * The model ID sent as-is to the triage provider, or null to use the
+     * provider's own default classification model (Jev for TypeSafe/OpenRouter).
      */
-    public function aiTriageModelId(): string
+    public function aiTriageModelId(): ?string
     {
-        return $this->ai_triage_model ?: (string) config('fault.ai_triage_model');
+        return $this->ai_triage_model ?: (config('fault.ai_triage_model') ?: null);
     }
 
     public function hasGithubConnected(): bool

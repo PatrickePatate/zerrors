@@ -24,6 +24,8 @@ class OrganizationAiSettings extends Component
 
     public bool $aiTriageEnabled = false;
 
+    public string $aiTriageProvider = '';
+
     public string $aiTriageModel = '';
 
     public string $aiTriageApiKey = '';
@@ -37,7 +39,8 @@ class OrganizationAiSettings extends Component
         $this->aiModel = (string) $organization->ai_model;
         $this->aiDeepModel = (string) $organization->ai_deep_model;
         $this->aiTriageEnabled = (bool) $organization->ai_triage_enabled;
-        $this->aiTriageModel = $organization->aiTriageModelId();
+        $this->aiTriageProvider = $organization->aiTriageProvider();
+        $this->aiTriageModel = (string) $organization->aiTriageModelId();
     }
 
     public function save(): void
@@ -51,6 +54,7 @@ class OrganizationAiSettings extends Component
             'aiModel' => ['nullable', 'string', 'max:255'],
             'aiDeepModel' => ['nullable', 'string', 'max:255'],
             'aiTriageEnabled' => ['boolean'],
+            'aiTriageProvider' => ['required', 'in:'.implode(',', array_keys(Organization::AI_TRIAGE_PROVIDERS))],
             'aiTriageModel' => ['nullable', 'string', 'max:255'],
             'aiTriageApiKey' => ['nullable', 'string'],
         ]);
@@ -60,6 +64,7 @@ class OrganizationAiSettings extends Component
             'ai_model' => $data['aiModel'] ?: null,
             'ai_deep_model' => $data['aiDeepModel'] ?: null,
             'ai_triage_enabled' => $data['aiTriageEnabled'],
+            'ai_triage_provider' => $data['aiTriageProvider'] !== config('fault.ai_triage_provider') ? $data['aiTriageProvider'] : null,
             'ai_triage_model' => ($data['aiTriageModel'] && $data['aiTriageModel'] !== config('fault.ai_triage_model')) ? $data['aiTriageModel'] : null,
         ];
 
