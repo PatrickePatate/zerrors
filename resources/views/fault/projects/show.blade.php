@@ -268,7 +268,7 @@
 
     @php
         $sourceMapReleases = $project->sourceMaps()
-            ->selectRaw('release, count(*) as maps_count, sum(size) as total_size')
+            ->select('release')->selectRaw('count(*) as maps_count, sum(size) as total_size')
             ->groupBy('release')->orderByDesc('release')->limit(10)->get();
         $sourceMapUploadUrl = url('/api/v1/organizations/'.$organization->slug.'/projects/'.$project->slug.'/releases/RELEASE/sourcemaps');
         $sourceMapCurl = 'curl -X POST -H "Authorization: Bearer $TOKEN" -F name="~/assets/app.js" -F file=@dist/assets/app.js.map '.$sourceMapUploadUrl;
