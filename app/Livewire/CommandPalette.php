@@ -4,11 +4,15 @@ namespace App\Livewire;
 
 use App\Models\FaultIssue;
 use App\Models\Organization;
+use App\Support\Database\ContainsSearch;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class CommandPalette extends Component
 {
+    #[Locked]
     public ?Organization $organization = null;
 
     public string $query = '';
@@ -52,7 +56,7 @@ class CommandPalette extends Component
         }
 
         return $this->organization->projects()
-            ->where('name', 'like', "%{$this->query}%")
+            ->tap(fn ($q) => ContainsSearch::apply($q, ['name'], $this->query))
             ->orderBy('name')
             ->limit(5)
             ->get()
@@ -76,10 +80,7 @@ class CommandPalette extends Component
         return FaultIssue::query()
             ->whereHas('project', fn ($q) => $q->where('organization_id', $this->organization->id))
             ->with('project')
-            ->where(fn ($q) => $q
-                ->where('title', 'like', "%{$this->query}%")
-                ->orWhere('culprit', 'like', "%{$this->query}%")
-            )
+            ->tap(fn ($q) => ContainsSearch::apply($q, ['title', 'culprit'], $this->query))
             ->orderByDesc('last_seen_at')
             ->limit(8)
             ->get()
@@ -93,6 +94,10 @@ class CommandPalette extends Component
 
     public function render()
     {
+        if ($this->organization !== null) {
+            Gate::authorize('view', $this->organization);
+        }
+
         $query = trim($this->query);
 
         $groups = [

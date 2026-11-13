@@ -72,14 +72,14 @@ class IssueFilteringTest extends TestCase
         $organization->users()->attach($user->id, ['role' => 'member']);
         $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
 
-        $handledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'HandledOne']);
+        $handledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'HandledOne', 'latest_event_handled' => true]);
         FaultEvent::factory()->create([
             'fault_project_id' => $project->id,
             'fault_issue_id' => $handledIssue->id,
             'exception' => ['values' => [['mechanism' => ['handled' => true]]]],
         ]);
 
-        $unhandledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'UnhandledOne']);
+        $unhandledIssue = FaultIssue::factory()->create(['fault_project_id' => $project->id, 'title' => 'UnhandledOne', 'latest_event_handled' => false]);
         FaultEvent::factory()->create([
             'fault_project_id' => $project->id,
             'fault_issue_id' => $unhandledIssue->id,

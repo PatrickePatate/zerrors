@@ -122,4 +122,26 @@ class MembersManagerLivewireTest extends TestCase
             ->call('removeMember', $other->id)
             ->assertStatus(403);
     }
+
+    public function test_an_admin_cannot_remove_an_owner(): void
+    {
+        $organization = Organization::factory()->create();
+        $admin = User::factory()->create();
+        $ownerA = User::factory()->create();
+        $ownerB = User::factory()->create();
+        $organization->users()->attach($admin->id, ['role' => 'admin']);
+        $organization->users()->attach($ownerA->id, ['role' => 'owner']);
+        $organization->users()->attach($ownerB->id, ['role' => 'owner']);
+
+        Livewire::actingAs($admin)
+            ->test(MembersManager::class, ['organization' => $organization])
+            ->call('removeMember', $ownerA->id)
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->delete(route('organizations.members.destroy', [$organization, $ownerA]))
+            ->assertForbidden();
+
+        $this->assertSame('owner', $organization->fresh()->roleFor($ownerA));
+    }
 }

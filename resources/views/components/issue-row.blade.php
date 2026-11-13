@@ -1,4 +1,4 @@
-@props(['issue', 'organization', 'members', 'project' => null, 'showProject' => false])
+@props(['issue', 'organization', 'members', 'project' => null, 'showProject' => false, 'selectable' => false, 'selected' => false])
 
 @php
     $project ??= $issue->project;
@@ -15,10 +15,19 @@
     @keydown.escape.window="menuOpen = false"
     ::class="menuOpen && 'bg-gray-50'"
 >
+    @if($selectable)
+        <x-table.cell class="w-8">
+            <input type="checkbox" value="{{ $issue->id }}" wire:model.live="selected" aria-label="Select issue"
+                   class="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/10">
+        </x-table.cell>
+    @endif
     <x-table.cell><x-badge :color="$statusColors[$issue->status] ?? 'gray'">{{ ucfirst($issue->status) }}</x-badge></x-table.cell>
     <x-table.cell>
         <div class="flex flex-wrap items-center gap-1.5">
             <x-issue-type-badges :issue="$issue" />
+            @if($triagePriority = \App\Enums\TriagePriority::tryFrom((string) $issue->triage_priority))
+                <x-badge :color="$triagePriority->color()">{{ $triagePriority->label() }}</x-badge>
+            @endif
             <a href="{{ route('organizations.issues.show', [$organization, $project, $issue]) }}" class="font-medium text-gray-900 hover:underline">
                 {{ $issue->title }}
             </a>
@@ -34,6 +43,7 @@
     <x-table.cell class="text-gray-600">{{ $issue->times_seen }}</x-table.cell>
     <x-table.cell class="text-gray-500">{{ $issue->last_seen_at?->diffForHumans() }}</x-table.cell>
     @unless($showProject)
+        <x-table.cell class="text-gray-600">{{ $issue->users_affected }}</x-table.cell>
         <x-table.cell class="text-gray-500">{{ $issue->assignee?->name ?? '—' }}</x-table.cell>
     @endunless
 

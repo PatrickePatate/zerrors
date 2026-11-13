@@ -2,20 +2,27 @@
 
 namespace App\Livewire;
 
+use App\Enums\OrganizationRole;
+use App\Livewire\Concerns\AuthorizesOrganizationAccess;
 use App\Mail\OrganizationInviteMail;
 use App\Models\Organization;
 use App\Models\OrganizationInvite;
 use App\Models\User;
 use App\Support\Organization\AuditLogger;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class MembersManager extends Component
 {
+    use AuthorizesOrganizationAccess;
     use WithPagination;
 
+    #[Locked]
     public Organization $organization;
 
     public string $email = '';
@@ -28,9 +35,39 @@ class MembersManager extends Component
 
     public bool $showInviteModal = false;
 
+    public string $digestFrequency = 'none';
+
+    /**
+     * Digest frequencies a member can choose for themselves.
+     *
+     * @var list<string>
+     */
+    public const DIGEST_FREQUENCIES = ['none', 'daily', 'weekly'];
+
     public function mount(Organization $organization): void
     {
         $this->organization = $organization;
+        $this->digestFrequency = $this->ownDigestFrequency();
+    }
+
+    protected function ownDigestFrequency(): string
+    {
+        $frequency = $this->organization->users()->where('user_id', auth()->id())->first()?->pivot->digest_frequency;
+
+        return in_array($frequency, self::DIGEST_FREQUENCIES, true) ? $frequency : 'none';
+    }
+
+    /**
+     * Per-user preference: any member (viewers included) may change their own
+     * digest, never anyone else's.
+     */
+    public function updateDigestFrequency(string $frequency): void
+    {
+        $this->authorizeView($this->organization);
+        abort_unless(in_array($frequency, self::DIGEST_FREQUENCIES, true), 422);
+
+        $this->organization->users()->updateExistingPivot(auth()->id(), ['digest_frequency' => $frequency]);
+        $this->digestFrequency = $frequency;
     }
 
     #[Computed]
@@ -51,18 +88,13 @@ class MembersManager extends Component
         return $this->organization->invites()->whereNull('accepted_at')->latest()->get();
     }
 
-    protected function authorizeManage(): void
-    {
-        abort_unless(in_array($this->myRole(), ['owner', 'admin'], true), 403);
-    }
-
     public function invite(): void
     {
-        $this->authorizeManage();
+        $this->authorizeManage($this->organization);
 
         $data = $this->validate([
             'email' => ['required', 'email', 'max:255'],
-            'role' => ['required', 'in:admin,member'],
+            'role' => ['required', Rule::in(OrganizationRole::invitable())],
         ]);
 
         if ($this->organization->users()->where('email', $data['email'])->exists()) {
@@ -89,7 +121,7 @@ class MembersManager extends Component
 
     public function revokeInvite(int $inviteId): void
     {
-        $this->authorizeManage();
+        $this->authorizeManage($this->organization);
 
         $invite = OrganizationInvite::findOrFail($inviteId);
         abort_unless($invite->organization_id === $this->organization->id, 404);
@@ -100,17 +132,16 @@ class MembersManager extends Component
 
     public function updateRole(int $userId, string $role): void
     {
-        $this->authorizeManage();
+        $this->authorizeManage($this->organization);
         $this->removalError = null;
 
         $user = User::findOrFail($userId);
-        $actingRole = $this->myRole();
         $targetRole = $this->organization->roleFor($user);
 
         abort_unless($targetRole !== null, 404);
-        abort_unless(in_array($role, ['owner', 'admin', 'member'], true), 422);
+        abort_unless(OrganizationRole::tryFrom($role) !== null, 422);
 
-        if ($actingRole !== 'owner' && ($targetRole === 'owner' || $role === 'owner')) {
+        if (! Gate::allows('own', $this->organization) && ($targetRole === 'owner' || $role === 'owner')) {
             abort(403);
         }
 
@@ -133,11 +164,14 @@ class MembersManager extends Component
 
     public function removeMember(int $userId): void
     {
-        $this->authorizeManage();
+        $this->authorizeManage($this->organization);
         $this->removalError = null;
 
         $user = User::findOrFail($userId);
         $targetRole = $this->organization->roleFor($user);
+
+        abort_unless($targetRole !== null, 404);
+        abort_if($targetRole === 'owner' && ! Gate::allows('own', $this->organization), 403);
 
         if ($targetRole === 'owner' && $this->organization->users()->wherePivot('role', 'owner')->count() <= 1) {
             $this->removalError = 'An organization needs at least one owner.';

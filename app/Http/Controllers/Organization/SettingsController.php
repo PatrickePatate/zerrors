@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -74,7 +75,7 @@ class SettingsController extends Controller
     public function destroy(Request $request, Organization $organization)
     {
         $user = $request->user();
-        abort_unless($organization->roleFor($user) === 'owner', 403);
+        Gate::authorize('own', $organization);
 
         if ($user->organizations()->count() <= 1) {
             return back()->withErrors(['confirm_name' => 'You must belong to another organization before deleting your last one.']);
@@ -99,11 +100,9 @@ class SettingsController extends Controller
     public function leave(Request $request, Organization $organization)
     {
         $user = $request->user();
-        $role = $organization->roleFor($user);
+        Gate::authorize('view', $organization);
 
-        abort_unless($role !== null, 403);
-
-        if ($role === 'owner' && $organization->users()->wherePivot('role', 'owner')->count() <= 1) {
+        if ($organization->roleFor($user) === 'owner' && $organization->users()->wherePivot('role', 'owner')->count() <= 1) {
             return back()->withErrors(['leave' => 'Transfer ownership to someone else before leaving — an organization needs at least one owner.']);
         }
 
@@ -114,7 +113,6 @@ class SettingsController extends Controller
 
     protected function authorizeManage(Request $request, Organization $organization): void
     {
-        $role = $organization->roleFor($request->user());
-        abort_unless(in_array($role, ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
     }
 }

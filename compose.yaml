@@ -1,0 +1,102 @@
+# Self-hosting stack. Copy .env.example to .env, set APP_KEY (php artisan key:generate --show),
+# APP_URL and DB_PASSWORD, then: docker compose up -d --build
+x-app: &app
+  build: .
+  image: zerrors:latest
+  restart: unless-stopped
+  env_file: .env
+  environment: &app-env
+    APP_ENV: production
+    APP_DEBUG: "false"
+    DB_CONNECTION: pgsql
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_DATABASE: ${DB_DATABASE:-zerrors}
+    DB_USERNAME: ${DB_USERNAME:-zerrors}
+    DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    REDIS_PASSWORD: "null"
+    QUEUE_CONNECTION: redis
+    CACHE_STORE: redis
+    SESSION_DRIVER: redis
+  depends_on: &app-deps
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  horizon:
+    <<: *app
+    command: ["php", "artisan", "horizon"]
+    depends_on:
+      <<: *app-deps
+      app:
+        condition: service_healthy
+    volumes:
+      - storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      <<: *app-deps
+      app:
+        condition: service_healthy
+    volumes:
+      - storage:/var/www/html/storage
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-zerrors}
+      POSTGRES_USER: ${DB_USERNAME:-zerrors}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:
+  storage:

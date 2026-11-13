@@ -80,4 +80,15 @@ class ProjectPlatformTest extends TestCase
             ->patch(route('organizations.projects.settings.update', [$organization, $project]), ['platform' => 'php'])
             ->assertForbidden();
     }
+
+    public function test_browser_platforms_have_labels_icons_and_js_flag(): void
+    {
+        foreach ([FaultPlatform::JavaScript, FaultPlatform::React, FaultPlatform::Vue] as $platform) {
+            $this->assertNotSame('', $platform->label());
+            $this->assertNotEmpty($platform->icon()->toHtml());
+            $this->assertTrue($platform->isJavaScript());
+        }
+
+        $this->assertFalse(FaultPlatform::Php->isJavaScript());
+    }
 }

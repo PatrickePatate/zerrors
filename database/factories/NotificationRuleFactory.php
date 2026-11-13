@@ -33,4 +33,15 @@ class NotificationRuleFactory extends Factory
             'thresholds' => $thresholds,
         ]);
     }
+
+    /**
+     * @param  array{window_minutes?: int, multiplier?: int, min_count?: int}  $settings
+     */
+    public function spike(array $settings = []): static
+    {
+        return $this->state([
+            'trigger' => NotificationRuleTrigger::Spike,
+            'thresholds' => $settings ?: null,
+        ]);
+    }
 }

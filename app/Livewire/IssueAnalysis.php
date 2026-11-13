@@ -2,14 +2,19 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesOrganizationAccess;
 use App\Models\FaultIssue;
 use App\Support\Ai\IssueAnalyzer;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use RuntimeException;
 use Throwable;
 
 class IssueAnalysis extends Component
 {
+    use AuthorizesOrganizationAccess;
+
+    #[Locked]
     public FaultIssue $issue;
 
     public ?string $error = null;
@@ -21,6 +26,8 @@ class IssueAnalysis extends Component
 
     public function analyze(IssueAnalyzer $analyzer): void
     {
+        $this->authorizeWrite($this->issue->project->organization);
+
         $this->error = null;
         $this->stream(content: '', replace: true, name: 'analysis-stream');
 
@@ -39,6 +46,8 @@ class IssueAnalysis extends Component
 
     public function deepen(IssueAnalyzer $analyzer): void
     {
+        $this->authorizeWrite($this->issue->project->organization);
+
         $this->error = null;
         $this->stream(content: '', replace: true, name: 'deepen-stream');
 

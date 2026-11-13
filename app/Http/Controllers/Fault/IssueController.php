@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Fault;
 use App\Http\Controllers\Controller;
 use App\Models\FaultEvent;
 use App\Models\FaultIssue;
+use App\Models\FaultIssueActivity;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Support\Ai\IssueAnalyzer;
+use App\Support\Database\ContainsSearch;
 use App\Support\Fault\GithubIssueCreator;
-use App\Support\Organization\AuditLogger;
+use App\Support\Fault\IssueWorkflow;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -40,7 +44,7 @@ class IssueController extends Controller
             $eventsQuery->when($filters[$column] ?? null, fn ($q, $value) => $q->where($column, $value));
         }
 
-        $eventsQuery->when($filters['ip'] ?? null, fn ($q, $ip) => $q->where('client_ip', 'like', '%'.$ip.'%'));
+        $eventsQuery->when($filters['ip'] ?? null, fn ($q, $ip) => ContainsSearch::apply($q, ['client_ip'], $ip));
 
         return view('fault.issues.show', [
             'organization' => $organization,
@@ -51,7 +55,7 @@ class IssueController extends Controller
             'events' => $eventsQuery->paginate(20)->withQueryString(),
             'eventFilters' => $filters,
             'eventFilterOptions' => collect(self::EVENT_FILTERS)->mapWithKeys(fn (string $column) => [
-                $column => $issue->events()->whereNotNull($column)->distinct()->orderBy($column)->pluck($column),
+                $column => $issue->events()->whereNotNull($column)->distinct()->orderBy($column)->limit(50)->pluck($column),
             ]),
             'eventHistogram' => $this->eventHistogram($issue),
             'members' => $organization->users()->orderBy('name')->get(),
@@ -79,12 +83,6 @@ class IssueController extends Controller
      */
     private function eventNavigation(FaultIssue $issue, FaultEvent $current): array
     {
-        $before = fn () => $issue->events()->where(fn ($q) => $q->where('occurred_at', '<', $current->occurred_at)
-            ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '<', $current->id)));
-
-        $after = fn () => $issue->events()->where(fn ($q) => $q->where('occurred_at', '>', $current->occurred_at)
-            ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '>', $current->id)));
-
         $counts = $issue->events()
             ->selectRaw(
                 'count(*) as total, sum(case when occurred_at < ? or (occurred_at = ? and id < ?) then 1 else 0 end) as before_count',
@@ -92,13 +90,41 @@ class IssueController extends Controller
             )
             ->first();
 
+        $total = (int) $counts->total;
+        $beforeCount = (int) $counts->before_count;
+        $afterCount = max(0, $total - $beforeCount - 1);
+
+        $previous = null;
+        $oldest = $current;
+        if ($beforeCount > 0) {
+            $previous = $issue->events()
+                ->where(fn ($q) => $q->where('occurred_at', '<', $current->occurred_at)
+                    ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '<', $current->id)))
+                ->orderByDesc('occurred_at')->orderByDesc('id')->first();
+            $oldest = $beforeCount === 1
+                ? $previous
+                : $issue->events()->orderBy('occurred_at')->orderBy('id')->first();
+        }
+
+        $next = null;
+        $newest = $current;
+        if ($afterCount > 0) {
+            $next = $issue->events()
+                ->where(fn ($q) => $q->where('occurred_at', '>', $current->occurred_at)
+                    ->orWhere(fn ($q2) => $q2->where('occurred_at', $current->occurred_at)->where('id', '>', $current->id)))
+                ->orderBy('occurred_at')->orderBy('id')->first();
+            $newest = $afterCount === 1
+                ? $next
+                : $issue->events()->orderByDesc('occurred_at')->orderByDesc('id')->first();
+        }
+
         return [
-            'oldest' => $issue->events()->orderBy('occurred_at')->orderBy('id')->first(),
-            'newest' => $issue->events()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
-            'previous' => $before()->orderByDesc('occurred_at')->orderByDesc('id')->first(),
-            'next' => $after()->orderBy('occurred_at')->orderBy('id')->first(),
-            'position' => (int) $counts->before_count + 1,
-            'total' => (int) $counts->total,
+            'oldest' => $oldest,
+            'newest' => $newest,
+            'previous' => $previous,
+            'next' => $next,
+            'position' => $beforeCount + 1,
+            'total' => $total,
         ];
     }
 
@@ -110,54 +136,80 @@ class IssueController extends Controller
      */
     private function eventHistogram(FaultIssue $issue, int $bucketCount = 48): array
     {
-        $timestamps = $issue->events()
-            ->toBase()
-            ->whereNotNull('occurred_at')
-            ->orderBy('occurred_at')
-            ->pluck('occurred_at')
-            ->map(fn (string $occurredAt): int => strtotime($occurredAt.' UTC'));
+        return Cache::remember("fault-issue:{$issue->id}:histogram", 60, function () use ($issue, $bucketCount): array {
+            $range = $issue->events()
+                ->toBase()
+                ->whereNotNull('occurred_at')
+                ->selectRaw('min(occurred_at) as first_at, max(occurred_at) as last_at')
+                ->first();
 
-        if ($timestamps->isEmpty()) {
-            return [];
-        }
+            if ($range === null || $range->first_at === null) {
+                return [];
+            }
 
-        $start = $timestamps->first();
-        $end = max(time(), $timestamps->last()) + 1;
-        $bucketWidth = max(60, (int) ceil(($end - $start) / $bucketCount));
+            $start = strtotime($range->first_at.' UTC');
+            $end = max(time(), strtotime($range->last_at.' UTC')) + 1;
+            $bucketWidth = max(60, (int) ceil(($end - $start) / $bucketCount));
 
-        $buckets = [];
-        for ($i = 0; $i < $bucketCount; $i++) {
-            $buckets[] = ['start' => $start + $i * $bucketWidth, 'end' => $start + ($i + 1) * $bucketWidth, 'count' => 0];
-        }
+            $epoch = $this->epochExpression($issue);
+            $bucketIndex = "floor(({$epoch} - {$start}) / {$bucketWidth})";
 
-        foreach ($timestamps as $timestamp) {
-            $buckets[min($bucketCount - 1, intdiv($timestamp - $start, $bucketWidth))]['count']++;
-        }
+            $counts = $issue->events()
+                ->toBase()
+                ->whereNotNull('occurred_at')
+                ->selectRaw("{$bucketIndex} as bucket, count(*) as aggregate")
+                ->groupByRaw($bucketIndex)
+                ->pluck('aggregate', 'bucket');
 
-        return $buckets;
+            $buckets = [];
+            for ($i = 0; $i < $bucketCount; $i++) {
+                $buckets[] = ['start' => $start + $i * $bucketWidth, 'end' => $start + ($i + 1) * $bucketWidth, 'count' => 0];
+            }
+
+            foreach ($counts as $bucket => $count) {
+                $buckets[max(0, min($bucketCount - 1, (int) $bucket))]['count'] += (int) $count;
+            }
+
+            return $buckets;
+        });
+    }
+
+    /**
+     * SQL expression yielding the unix epoch (UTC) of the events.occurred_at column for the connection driver.
+     */
+    private function epochExpression(FaultIssue $issue): string
+    {
+        return match ($issue->getConnection()->getDriverName()) {
+            'mysql', 'mariadb' => "TIMESTAMPDIFF(SECOND, '1970-01-01 00:00:00', occurred_at)",
+            'pgsql' => 'EXTRACT(EPOCH FROM occurred_at)',
+            default => "CAST(strftime('%s', occurred_at) AS INTEGER)",
+        };
     }
 
     public function update(Request $request, Organization $organization, FaultProject $project, FaultIssue $issue)
     {
+        Gate::authorize('write', $organization);
+
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
         $data = $request->validate(['status' => ['required', 'in:unresolved,resolved,ignored']]);
 
-        $previousStatus = $issue->status;
+        $workflow = app(IssueWorkflow::class);
 
-        $issue->update($data);
-
-        app(AuditLogger::class)->log($organization, $request->user(), 'issue.status_updated', $issue->title, [
-            'from' => $previousStatus,
-            'to' => $issue->status,
-        ]);
+        match ($data['status']) {
+            'resolved' => $workflow->resolve($organization, $issue, $request->user()),
+            'ignored' => $workflow->ignore($organization, $issue, $request->user()),
+            'unresolved' => $workflow->unresolve($organization, $issue, $request->user()),
+        };
 
         return back();
     }
 
     public function assign(Request $request, Organization $organization, FaultProject $project, FaultIssue $issue)
     {
+        Gate::authorize('write', $organization);
+
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
@@ -168,13 +220,15 @@ class IssueController extends Controller
             abort_unless($organization->users()->where('user_id', $userId)->exists(), 422);
         }
 
-        $issue->update(['assigned_to_user_id' => $userId]);
+        app(IssueWorkflow::class)->assign($organization, $issue, $request->user(), $userId);
 
         return back();
     }
 
     public function analyze(Organization $organization, FaultProject $project, FaultIssue $issue, IssueAnalyzer $analyzer)
     {
+        Gate::authorize('write', $organization);
+
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
@@ -193,6 +247,8 @@ class IssueController extends Controller
 
     public function deepen(Organization $organization, FaultProject $project, FaultIssue $issue, IssueAnalyzer $analyzer)
     {
+        Gate::authorize('write', $organization);
+
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
@@ -211,11 +267,14 @@ class IssueController extends Controller
 
     public function createGithubIssue(Organization $organization, FaultProject $project, FaultIssue $issue, GithubIssueCreator $creator)
     {
+        Gate::authorize('write', $organization);
+
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($issue->fault_project_id === $project->id, 404);
 
         try {
             $creator->create($issue);
+            FaultIssueActivity::record($issue, 'github_linked', ['number' => $issue->github_issue_number, 'url' => $issue->github_issue_url], request()->user());
         } catch (RuntimeException $e) {
             return back()->withErrors(['github' => $e->getMessage()]);
         }

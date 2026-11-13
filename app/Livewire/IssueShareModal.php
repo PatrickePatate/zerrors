@@ -2,19 +2,26 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesOrganizationAccess;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class IssueShareModal extends Component
 {
+    use AuthorizesOrganizationAccess;
+
+    #[Locked]
     public Organization $organization;
 
+    #[Locked]
     public FaultProject $project;
 
+    #[Locked]
     public FaultIssue $issue;
 
     public string $visibility = 'public';
@@ -32,6 +39,8 @@ class IssueShareModal extends Component
 
     public function createLink(): void
     {
+        $this->authorizeWrite($this->organization);
+
         $data = $this->validate([
             'visibility' => ['required', 'in:public,password,temporary'],
             'password' => ['required_if:visibility,password', 'nullable', 'string', 'min:4'],
@@ -55,6 +64,8 @@ class IssueShareModal extends Component
 
     public function revoke(int $linkId): void
     {
+        $this->authorizeWrite($this->organization);
+
         $link = $this->issue->shareLinks()->findOrFail($linkId);
         $link->update(['revoked_at' => now()]);
 

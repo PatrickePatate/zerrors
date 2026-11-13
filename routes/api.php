@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GithubWebhookController;
 use App\Http\Controllers\Api\IssueApiController;
 use App\Http\Controllers\Api\OrganizationApiController;
 use App\Http\Controllers\Api\ProjectApiController;
+use App\Http\Controllers\Api\ReleaseApiController;
+use App\Http\Controllers\Api\SourceMapApiController;
 use App\Http\Controllers\Fault\IngestController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 // No auth middleware here on purpose: SDKs authenticate via the public key
 // embedded in the DSN, verified inside the controller against the project.
@@ -24,9 +28,21 @@ Route::post('/webhooks/github', [GithubWebhookController::class, 'handle'])
     ->middleware('throttle:fault-ingest');
 
 // Read-only JSON API for personal access tokens (Laravel Sanctum).
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->prefix('v1')->group(function () {
     Route::get('/organizations', [OrganizationApiController::class, 'index']);
     Route::get('/organizations/{organization:slug}/projects', [ProjectApiController::class, 'index']);
     Route::get('/organizations/{organization:slug}/projects/{project:slug}/issues', [IssueApiController::class, 'index']);
     Route::get('/organizations/{organization:slug}/projects/{project:slug}/issues/{issue}', [IssueApiController::class, 'show']);
+    Route::get('/organizations/{organization:slug}/projects/{project:slug}/issues/{issue}/events', [EventApiController::class, 'index']);
+    Route::get('/organizations/{organization:slug}/projects/{project:slug}/issues/{issue}/events/{event}', [EventApiController::class, 'show']);
+    Route::get('/organizations/{organization:slug}/projects/{project:slug}/releases', [ReleaseApiController::class, 'index']);
+
+    Route::get('/organizations/{organization:slug}/projects/{project:slug}/releases/{version}/sourcemaps', [SourceMapApiController::class, 'index'])->name('api.sourcemaps.index');
+
+    Route::middleware(CheckForAnyAbility::class.':write')->group(function () {
+        Route::post('/organizations/{organization:slug}/projects/{project:slug}/releases/{version}/sourcemaps', [SourceMapApiController::class, 'store'])->name('api.sourcemaps.store');
+        Route::delete('/organizations/{organization:slug}/projects/{project:slug}/releases/{version}/sourcemaps/{sourceMap}', [SourceMapApiController::class, 'destroy'])->name('api.sourcemaps.destroy');
+        Route::patch('/organizations/{organization:slug}/projects/{project:slug}/issues/{issue}', [IssueApiController::class, 'update']);
+        Route::post('/organizations/{organization:slug}/projects/{project:slug}/releases', [ReleaseApiController::class, 'store']);
+    });
 });

@@ -18,7 +18,7 @@ class IngestTest extends TestCase
     {
         Bus::fake([ForwardFaultEvent::class]);
 
-        $project = FaultProject::factory()->create();
+        $project = FaultProject::factory()->create(['forward_enabled' => true, 'forward_dsn' => 'https://key@o1.ingest.sentry.io/1']);
 
         $eventId = 'a'.str_repeat('0', 31);
         $envelopeHeader = json_encode(['event_id' => $eventId]);

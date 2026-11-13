@@ -38,7 +38,7 @@ Zerrors collects exceptions and error events from your applications (via the Sen
 - Composer
 - Node.js & npm
 - A database supported by Laravel (MySQL/PostgreSQL/SQLite)
-- Redis (recommended, used by Horizon/queues)
+- Redis (required: queues, Horizon, and ingest counters)
 
 ### Installation
 
@@ -87,6 +87,26 @@ A few things to watch for when running under Octane, since the application stays
 - Use [Octane's `Octane::state()` / listeners](https://laravel.com/docs/octane#managing-memory-leaks) or the built-in listeners (already wired in `config/octane.php`) to reset things like the database connection between requests if you add stateful services.
 - Restart workers after deploying new code (`php artisan octane:reload`) — Octane won't pick up code changes on its own since the app stays booted.
 
+### Running with Docker
+
+A `Dockerfile` and `compose.yaml` are provided for self-hosting (app on Octane/RoadRunner, Horizon, scheduler, PostgreSQL 16, Redis 7):
+
+```bash
+cp .env.example .env
+# set APP_KEY (php artisan key:generate --show), APP_URL and DB_PASSWORD in .env
+docker compose up -d --build
+```
+
+The `app` service runs `php artisan migrate --force` on start and serves on port 8000 (`APP_PORT` to change it).
+
+### Code quality
+
+```bash
+vendor/bin/pint        # code style
+composer analyse       # PHPStan / Larastan (level 5)
+composer test
+```
+
 ### Sending errors to Zerrors
 
 Once you've created a project, use its DSN with any [Sentry SDK](https://docs.sentry.io/platforms/) exactly as you would with Sentry — Zerrors implements the same ingestion endpoints.
@@ -101,7 +121,7 @@ Zerrors uses a [GitHub App](https://docs.github.com/en/apps) (not a personal acc
    - Check **"Redirect on update"** under "Post installation" — this makes GitHub re-fire the Setup URL whenever the installation changes (e.g. repos added/removed), not just on first install.
    - Leave **"Request user authorization (OAuth) during installation"** unchecked — Zerrors authenticates as the app (via a private key), not as the installing user, so no user OAuth exchange is needed.
    - **Webhook URL**: `https://your-domain.com/api/webhooks/github`, with a webhook secret you generate yourself (keep it, you'll need it below).
-   - **Webhook events**: subscribe to `push`.
+   - **Webhook events**: subscribe to `push` and `issues` (the latter syncs closing/reopening of GitHub issues back to Zerrors).
    - **Repository permissions**: `Contents: Read-only`, `Issues: Read and write`.
    - **Where can this GitHub App be installed?**: "Any account" (or "Only on this account" if it's just for you).
 2. After creating the app, note its **App ID**, generate a **Client secret**, and generate a **private key** (downloads a `.pem` file). Also note the app's **slug** (the URL-friendly name shown in its settings URL).

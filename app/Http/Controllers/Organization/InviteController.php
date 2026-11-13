@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Organization;
 
+use App\Enums\OrganizationRole;
 use App\Http\Controllers\Controller;
 use App\Mail\OrganizationInviteMail;
 use App\Models\Organization;
@@ -10,7 +11,9 @@ use App\Support\Organization\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class InviteController extends Controller
@@ -24,7 +27,7 @@ class InviteController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
-            'role' => ['required', 'in:admin,member'],
+            'role' => ['required', Rule::in(OrganizationRole::invitable())],
         ]);
 
         if ($organization->users()->where('email', $data['email'])->exists()) {
@@ -82,7 +85,6 @@ class InviteController extends Controller
 
     protected function authorizeManage(Request $request, Organization $organization): void
     {
-        $role = $organization->roleFor($request->user());
-        abort_unless(in_array($role, ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
     }
 }

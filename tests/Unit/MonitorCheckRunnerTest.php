@@ -8,15 +8,120 @@ use App\Enums\MonitorType;
 use App\Models\Monitor;
 use App\Services\Monitoring\CertificateInspector;
 use App\Services\Monitoring\MonitorCheckRunner;
+use App\Support\Net\OutboundUrlGuard;
 use Carbon\Carbon;
+use GuzzleHttp\Psr7\Uri;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
+use ReflectionMethod;
 use RuntimeException;
 use Tests\TestCase;
 
 class MonitorCheckRunnerTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * Fake DNS answers for hostnames; anything not listed resolves to a public address.
+     *
+     * @var array<string, list<string>>
+     */
+    protected array $dnsRecords = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('monitoring.allow_private_targets', false);
+
+        $this->app->instance(OutboundUrlGuard::class, new OutboundUrlGuard(
+            fn (string $host): array => $this->dnsRecords[$host] ?? ['93.184.216.34'],
+        ));
+    }
+
+    public function test_http_monitor_blocks_a_private_target_without_sending_a_request(): void
+    {
+        Http::fake(['*' => Http::response('ok', 200)]);
+
+        $monitor = Monitor::factory()->create([
+            'type' => MonitorType::Http,
+            'url' => 'http://169.254.169.254/latest/meta-data/',
+        ]);
+
+        $check = app(MonitorCheckRunner::class)->run($monitor);
+
+        $this->assertSame(MonitorStatus::Down, $check->status);
+        $this->assertNull($check->status_code);
+        $this->assertStringContainsString('169.254.169.254', $check->error_message);
+        Http::assertNothingSent();
+    }
+
+    public function test_http_monitor_blocks_a_hostname_that_now_resolves_to_a_private_address(): void
+    {
+        Http::fake(['*' => Http::response('ok', 200)]);
+        $this->dnsRecords['rebind.example.com'] = ['10.0.0.9'];
+
+        $monitor = Monitor::factory()->create([
+            'type' => MonitorType::Http,
+            'url' => 'https://rebind.example.com/',
+        ]);
+
+        $check = app(MonitorCheckRunner::class)->run($monitor);
+
+        $this->assertSame(MonitorStatus::Down, $check->status);
+        $this->assertStringContainsString('10.0.0.9', $check->error_message);
+        Http::assertNothingSent();
+    }
+
+    public function test_laravel_health_monitor_blocks_a_private_target_without_sending_a_request(): void
+    {
+        Http::fake(['*' => Http::response(['finishedAt' => time(), 'checkResults' => []], 200)]);
+
+        $monitor = Monitor::factory()->create([
+            'type' => MonitorType::LaravelHealth,
+            'url' => 'http://[::1]:8000/health-json',
+        ]);
+
+        $check = app(MonitorCheckRunner::class)->run($monitor);
+
+        $this->assertSame(MonitorStatus::Down, $check->status);
+        $this->assertNotNull($check->error_message);
+        Http::assertNothingSent();
+    }
+
+    public function test_ping_monitor_blocks_a_private_host_without_running_ping(): void
+    {
+        $monitor = Monitor::factory()->create([
+            'type' => MonitorType::Ping,
+            'url' => '192.168.1.1',
+        ]);
+
+        $check = app(MonitorCheckRunner::class)->run($monitor);
+
+        $this->assertSame(MonitorStatus::Down, $check->status);
+        $this->assertStringContainsString('192.168.1.1', $check->error_message);
+    }
+
+    public function test_certificate_inspector_refuses_a_private_target_before_opening_a_socket(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        app(CertificateInspector::class)->expiresAt('https://127.0.0.1/', 5);
+    }
+
+    public function test_redirect_hops_to_a_private_address_are_refused(): void
+    {
+        $runner = app(MonitorCheckRunner::class);
+        $method = new ReflectionMethod($runner, 'assertRedirectAllowed');
+
+        $method->invoke($runner, new Uri('https://example.com/start'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Redirect blocked');
+
+        $method->invoke($runner, new Uri('http://169.254.169.254/latest/meta-data/'));
+    }
 
     public function test_http_monitor_records_an_up_check_on_matching_status(): void
     {

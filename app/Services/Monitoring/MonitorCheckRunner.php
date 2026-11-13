@@ -7,15 +7,23 @@ use App\Enums\MonitorStatus;
 use App\Enums\MonitorType;
 use App\Models\Monitor;
 use App\Models\MonitorCheck;
+use App\Support\Net\OutboundUrlGuard;
 use GuzzleHttp\TransferStats;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Symfony\Component\Process\Process;
 use Throwable;
 
 class MonitorCheckRunner
 {
-    public function __construct(protected CertificateInspector $certificateInspector) {}
+    public function __construct(
+        protected CertificateInspector $certificateInspector,
+        protected OutboundUrlGuard $guard,
+    ) {}
 
     public function run(Monitor $monitor): MonitorCheck
     {
@@ -76,6 +84,10 @@ class MonitorCheckRunner
     {
         $timing = $this->emptyTiming();
 
+        // Checked here, not only at save time, so a hostname that later
+        // resolves to an internal address (DNS rebinding) is still blocked.
+        $this->guard->assertAllowedUrl($monitor->url);
+
         $request = Http::timeout($monitor->timeout_seconds)
             ->withUserAgent('Zerrors (+uptime)')
             ->withHeaders($monitor->headers ?? [])
@@ -87,6 +99,11 @@ class MonitorCheckRunner
                 'on_stats' => function (TransferStats $stats) use (&$timing) {
                     $timing = $this->extractTiming($stats);
                 },
+                // Every redirect hop is re-validated so a public URL cannot
+                // bounce the request to an internal address.
+                'allow_redirects' => [
+                    'on_redirect' => fn (RequestInterface $request, ResponseInterface $response, UriInterface $uri) => $this->assertRedirectAllowed($uri),
+                ],
             ])
             // A single retry after a short delay absorbs a transient blip on the
             // target (a mid-deploy config reload, a brief WAF hiccup, a restarting
@@ -101,6 +118,18 @@ class MonitorCheckRunner
             MonitorHttpMethod::Post => $request->post($monitor->url),
             default => $request->get($monitor->url),
         };
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    protected function assertRedirectAllowed(UriInterface $uri): void
+    {
+        try {
+            $this->guard->assertAllowedUrl((string) $uri);
+        } catch (InvalidArgumentException $e) {
+            throw new InvalidArgumentException('Redirect blocked: '.$e->getMessage(), previous: $e);
+        }
     }
 
     /**
@@ -165,6 +194,8 @@ class MonitorCheckRunner
         $start = microtime(true);
 
         try {
+            $this->guard->assertAllowedHost($monitor->url);
+
             $process->run();
         } catch (Throwable $e) {
             return [

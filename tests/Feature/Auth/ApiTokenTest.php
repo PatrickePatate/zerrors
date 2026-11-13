@@ -61,4 +61,16 @@ class ApiTokenTest extends TestCase
             ->getJson("/api/v1/organizations/{$organization->slug}/projects")
             ->assertForbidden();
     }
+
+    public function test_token_abilities_follow_the_chosen_access_level(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('security.tokens.store'), ['name' => 'default']);
+        $this->actingAs($user)->post(route('security.tokens.store'), ['name' => 'rw', 'access' => 'write']);
+        $this->actingAs($user)->post(route('security.tokens.store'), ['name' => 'bad', 'access' => 'root'])->assertSessionHasErrors('access');
+
+        $this->assertSame(['read'], $user->tokens()->where('name', 'default')->first()->abilities);
+        $this->assertSame(['read', 'write'], $user->tokens()->where('name', 'rw')->first()->abilities);
+    }
 }

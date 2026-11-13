@@ -135,6 +135,13 @@
                 <div class="max-w-xs flex-1">
                     <x-form.text-input label="Token name" name="name" placeholder="CI script" :error="$errors->first('name')" required />
                 </div>
+                <div>
+                    <label for="token-access" class="mb-1 block text-sm font-medium text-gray-700">Access</label>
+                    <select id="token-access" name="access" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                        <option value="read" @selected(old('access', 'read') === 'read')>Read-only</option>
+                        <option value="write" @selected(old('access') === 'write')>Read &amp; write</option>
+                    </select>
+                </div>
                 <x-button type="submit">Create token</x-button>
             </form>
         </div>
@@ -144,6 +151,9 @@
                 <div class="flex items-center justify-between px-5 py-2 text-sm">
                     <div>
                         <span class="font-medium text-gray-900">{{ $token->name }}</span>
+                        <span class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                            {{ in_array('*', $token->abilities ?? [], true) ? 'full access' : implode(', ', $token->abilities ?? []) }}
+                        </span>
                         <span class="ml-2 text-gray-400">
                             {{ $token->last_used_at ? 'last used '.$token->last_used_at->diffForHumans() : 'never used' }}
                         </span>

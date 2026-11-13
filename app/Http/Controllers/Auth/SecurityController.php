@@ -61,9 +61,14 @@ class SecurityController extends Controller
 
     public function storeToken(Request $request)
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:255']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'access' => ['nullable', 'in:read,write'],
+        ]);
 
-        $token = $request->user()->createToken($data['name']);
+        $abilities = ($data['access'] ?? 'read') === 'write' ? ['read', 'write'] : ['read'];
+
+        $token = $request->user()->createToken($data['name'], $abilities);
 
         return back()->with('plain_text_token', $token->plainTextToken);
     }

@@ -12,10 +12,16 @@
         </h1>
 
         @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
-            <x-button :href="route('organizations.monitors.create', $organization)" tag="a">
-                <x-lucide-plus class="h-4 w-4" />
-                New monitor
-            </x-button>
+            <div class="flex items-center gap-2">
+                <x-button :href="route('organizations.status-page.edit', $organization)" tag="a" variant="secondary">
+                    <x-lucide-globe class="h-4 w-4" />
+                    Status page
+                </x-button>
+                <x-button :href="route('organizations.monitors.create', $organization)" tag="a">
+                    <x-lucide-plus class="h-4 w-4" />
+                    New monitor
+                </x-button>
+            </div>
         @endif
     </div>
 

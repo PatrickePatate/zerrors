@@ -3,11 +3,13 @@
 namespace App\Livewire;
 
 use App\Models\FaultIssue;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class IssueStatusBadge extends Component
 {
+    #[Locked]
     public FaultIssue $issue;
 
     public function mount(FaultIssue $issue): void

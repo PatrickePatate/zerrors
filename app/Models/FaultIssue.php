@@ -2,13 +2,18 @@
 
 namespace App\Models;
 
+use App\Observers\FaultIssueGithubObserver;
+use App\Observers\FaultIssueTriageObserver;
 use Database\Factories\FaultIssueFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Redis;
 
+#[ObservedBy([FaultIssueGithubObserver::class, FaultIssueTriageObserver::class])]
 class FaultIssue extends Model
 {
     /** @use HasFactory<FaultIssueFactory> */
@@ -20,6 +25,10 @@ class FaultIssue extends Model
         'ai_analysis', 'ai_analyzed_at', 'ai_deep_analysis', 'ai_deep_analyzed_at',
         'assigned_to_user_id', 'regressed_at',
         'first_seen_release', 'github_issue_url', 'github_issue_number',
+        'latest_event_handled', 'users_affected',
+        'snoozed_until', 'snooze_until_count', 'resolved_in_release', 'resolved_in_next_release',
+        'resolved_last_seen_release', 'resolved_at', 'resolved_by_user_id',
+        'triage_category', 'triage_priority', 'triage_model', 'triaged_at', 'triage_error',
     ];
 
     protected $casts = [
@@ -28,6 +37,11 @@ class FaultIssue extends Model
         'ai_analyzed_at' => 'datetime',
         'ai_deep_analyzed_at' => 'datetime',
         'regressed_at' => 'datetime',
+        'latest_event_handled' => 'boolean',
+        'snoozed_until' => 'datetime',
+        'resolved_at' => 'datetime',
+        'resolved_in_next_release' => 'boolean',
+        'triaged_at' => 'datetime',
     ];
 
     public function project(): BelongsTo
@@ -53,6 +67,24 @@ class FaultIssue extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    public function feedback(): HasMany
+    {
+        return $this->hasMany(FaultFeedback::class);
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(FaultIssueActivity::class);
+    }
+
+    /**
+     * times_seen plus the count still buffered in Redis awaiting the periodic flush.
+     */
+    public function liveTimesSeen(): int
+    {
+        return (int) $this->times_seen + (int) Redis::connection()->get("fault:issue:{$this->id}:pending_count");
     }
 
     public function shareLinks(): HasMany

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\OrganizationRole;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Organization extends Model
@@ -15,14 +17,18 @@ class Organization extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'ai_deep_model', 'alerts_enabled',
+        'name', 'slug', 'ai_provider', 'ai_api_key', 'ai_model', 'ai_deep_model', 'ai_triage_enabled', 'ai_triage_provider', 'ai_triage_model', 'ai_triage_api_key', 'alerts_enabled',
         'require_2fa', 'github_installation_id', 'github_account_login', 'github_account_type',
         'github_connected_at', 'slack_team_id', 'slack_team_name', 'slack_bot_token',
         'slack_authed_user_id', 'slack_connected_at',
     ];
 
+    protected $hidden = ['ai_api_key', 'ai_triage_api_key', 'slack_bot_token'];
+
     protected $casts = [
         'ai_api_key' => 'encrypted',
+        'ai_triage_api_key' => 'encrypted',
+        'ai_triage_enabled' => 'boolean',
         'alerts_enabled' => 'boolean',
         'require_2fa' => 'boolean',
         'github_connected_at' => 'datetime',
@@ -42,6 +48,15 @@ class Organization extends Model
         'openrouter' => 'OpenRouter',
     ];
 
+    /**
+     * Providers the AI SDK can run classification on.
+     */
+    public const AI_TRIAGE_PROVIDERS = [
+        'typesafe' => 'TypeSafe (Jev)',
+        'openrouter' => 'OpenRouter',
+        'openai' => 'OpenAI',
+    ];
+
     protected static function booted(): void
     {
         static::creating(function (self $organization): void {
@@ -51,7 +66,7 @@ class Organization extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(User::class)->withPivot('role', 'digest_frequency')->withTimestamps();
     }
 
     public function projects(): HasMany
@@ -62,6 +77,11 @@ class Organization extends Model
     public function monitors(): HasMany
     {
         return $this->hasMany(Monitor::class);
+    }
+
+    public function statusPage(): HasOne
+    {
+        return $this->hasOne(StatusPage::class);
     }
 
     public function invites(): HasMany
@@ -84,6 +104,13 @@ class Organization extends Model
             ?? $this->users()->where('user_id', $user->id)->value('role');
     }
 
+    public function roleEnumFor(?User $user): ?OrganizationRole
+    {
+        $role = $this->roleFor($user);
+
+        return $role === null ? null : OrganizationRole::tryFrom($role);
+    }
+
     public function hasAiConfigured(): bool
     {
         return ! empty($this->ai_provider) && ! empty($this->ai_api_key);
@@ -96,6 +123,41 @@ class Organization extends Model
     public function aiDeepModel(): ?string
     {
         return $this->ai_deep_model ?: $this->ai_model ?: null;
+    }
+
+    /**
+     * The AI SDK provider that classifies issues for this organization.
+     */
+    public function aiTriageProvider(): string
+    {
+        $provider = $this->ai_triage_provider ?: (string) config('fault.ai_triage_provider');
+
+        return array_key_exists($provider, self::AI_TRIAGE_PROVIDERS) ? $provider : 'typesafe';
+    }
+
+    /**
+     * The key used for triage: the organization's own provider key when it is
+     * on the triage provider, otherwise the dedicated triage key.
+     */
+    public function aiTriageKey(): ?string
+    {
+        $key = $this->ai_provider === $this->aiTriageProvider() ? $this->ai_api_key : $this->ai_triage_api_key;
+
+        return filled($key) ? $key : null;
+    }
+
+    public function canTriageIssues(): bool
+    {
+        return $this->ai_triage_enabled && $this->aiTriageKey() !== null;
+    }
+
+    /**
+     * The model ID sent as-is to the triage provider, or null to use the
+     * provider's own default classification model (Jev for TypeSafe/OpenRouter).
+     */
+    public function aiTriageModelId(): ?string
+    {
+        return $this->ai_triage_model ?: (config('fault.ai_triage_model') ?: null);
     }
 
     public function hasGithubConnected(): bool

@@ -10,6 +10,7 @@ use Database\Factories\MonitorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Monitor extends Model
@@ -55,6 +56,12 @@ class Monitor extends Model
     public function dailyStats(): HasMany
     {
         return $this->hasMany(MonitorDailyStat::class);
+    }
+
+    public function statusPages(): BelongsToMany
+    {
+        return $this->belongsToMany(StatusPage::class, 'monitor_status_page')
+            ->withPivot(['display_name', 'position']);
     }
 
     /**

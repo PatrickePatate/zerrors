@@ -2,12 +2,17 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesOrganizationAccess;
 use App\Models\Organization;
 use App\Support\Organization\AuditLogger;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class OrganizationGeneralSettings extends Component
 {
+    use AuthorizesOrganizationAccess;
+
+    #[Locked]
     public Organization $organization;
 
     public string $name = '';
@@ -28,7 +33,7 @@ class OrganizationGeneralSettings extends Component
 
     public function save(): void
     {
-        abort_unless(in_array($this->organization->roleFor(auth()->user()), ['owner', 'admin'], true), 403);
+        $this->authorizeManage($this->organization);
 
         $this->saved = false;
 

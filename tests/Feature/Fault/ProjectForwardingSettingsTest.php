@@ -5,12 +5,39 @@ namespace Tests\Feature\Fault;
 use App\Models\FaultProject;
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\Net\OutboundUrlGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ProjectForwardingSettingsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('monitoring.allow_private_targets', false);
+        $this->app->instance(OutboundUrlGuard::class, new OutboundUrlGuard(
+            fn (string $host): array => $host === 'internal.test' ? ['127.0.0.1'] : ['93.184.216.34'],
+        ));
+    }
+
+    public function test_a_dsn_pointing_at_a_private_address_is_rejected(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+        $project = FaultProject::factory()->create(['organization_id' => $organization->id]);
+
+        $response = $this->actingAs($owner)->patch(
+            route('organizations.projects.forwarding.update', [$organization, $project]),
+            ['forward_enabled' => '1', 'forward_dsn' => 'https://key@internal.test/1'],
+        );
+
+        $response->assertSessionHasErrors('forward_dsn');
+        $this->assertNull($project->refresh()->forward_dsn);
+    }
 
     public function test_owner_can_configure_a_forwarding_dsn(): void
     {
