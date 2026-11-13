@@ -16,6 +16,7 @@ class StacktraceFrame
         public readonly string $language,
         public readonly array $codeLines,
         public readonly array $vars,
+        public readonly ?string $minifiedLocation = null,
     ) {}
 
     /**
@@ -33,7 +34,25 @@ class StacktraceFrame
             language: FrameLanguageResolver::resolve($filename),
             codeLines: self::buildCodeLines($frame),
             vars: self::formatVars($frame['vars'] ?? []),
+            minifiedLocation: self::formatMinified($frame['data']['minified'] ?? null),
         );
+    }
+
+    protected static function formatMinified(mixed $minified): ?string
+    {
+        if (! is_array($minified) || empty($minified['filename'])) {
+            return null;
+        }
+
+        $location = (string) $minified['filename'];
+
+        foreach (['lineno', 'colno'] as $key) {
+            if (isset($minified[$key])) {
+                $location .= ':'.$minified[$key];
+            }
+        }
+
+        return $location;
     }
 
     public function hasContext(): bool

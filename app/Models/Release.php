@@ -6,6 +6,7 @@ use Database\Factories\ReleaseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Release extends Model
 {
@@ -32,5 +33,10 @@ class Release extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(FaultProject::class, 'fault_project_id');
+    }
+
+    public function commits(): HasMany
+    {
+        return $this->hasMany(ReleaseCommit::class);
     }
 }

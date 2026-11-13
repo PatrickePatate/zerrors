@@ -43,6 +43,8 @@ class NotificationChannel extends Model
             NotificationChannelType::Slack => '#'.($this->config['channel_name'] ?? '?'),
             NotificationChannelType::Telegram => 'Chat '.($this->config['chat_id'] ?? '?'),
             NotificationChannelType::Email => $this->config['email'] ?? '',
+            NotificationChannelType::Discord => 'Discord webhook',
+            NotificationChannelType::Webhook => parse_url($this->config['url'] ?? '', PHP_URL_HOST) ?: 'Webhook',
         };
     }
 }

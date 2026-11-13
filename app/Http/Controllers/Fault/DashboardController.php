@@ -10,9 +10,11 @@ use App\Models\FaultEvent;
 use App\Models\FaultIssue;
 use App\Models\FaultProject;
 use App\Models\Organization;
+use App\Support\Net\OutboundUrlGuard;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -54,6 +56,8 @@ class DashboardController extends Controller
 
     public function store(Request $request, Organization $organization)
     {
+        Gate::authorize('write', $organization);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'platform' => ['required', Rule::enum(FaultPlatform::class)],
@@ -81,12 +85,13 @@ class DashboardController extends Controller
     public function updateSettings(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $data = $request->validate([
             'platform' => ['required', Rule::enum(FaultPlatform::class)],
             'github_repo' => ['nullable', 'string', 'regex:/^[\w.-]+\/[\w.-]+$/'],
             'production_branch' => ['nullable', 'string', 'max:255'],
+            'retention_days' => ['sometimes', 'required', 'integer', 'min:0', 'max:3650'],
         ]);
 
         if (empty($data['production_branch'])) {
@@ -101,7 +106,7 @@ class DashboardController extends Controller
     public function updateForwarding(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $data = $request->validate([
             'forward_enabled' => ['sometimes', 'boolean'],
@@ -112,9 +117,15 @@ class DashboardController extends Controller
 
         if (array_key_exists('forward_dsn', $data) && $data['forward_dsn'] !== null) {
             try {
-                Dsn::createFromString($data['forward_dsn']);
+                $dsn = Dsn::createFromString($data['forward_dsn']);
             } catch (InvalidArgumentException) {
                 return back()->withErrors(['forward_dsn' => 'That does not look like a valid Sentry DSN.']);
+            }
+
+            try {
+                app(OutboundUrlGuard::class)->assertAllowedUrl($dsn->getEnvelopeApiEndpointUrl());
+            } catch (InvalidArgumentException $exception) {
+                return back()->withErrors(['forward_dsn' => $exception->getMessage()]);
             }
         }
 
@@ -126,7 +137,7 @@ class DashboardController extends Controller
     public function updateCensorship(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         if ($request->boolean('reset')) {
             $project->update(['censored_headers' => null]);
@@ -156,7 +167,7 @@ class DashboardController extends Controller
     public function transfer(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless($organization->roleFor($request->user()) === 'owner', 403);
+        Gate::authorize('own', $organization);
 
         $data = $request->validate([
             'organization_id' => ['required', 'integer', Rule::exists('organizations', 'id')],
@@ -166,7 +177,7 @@ class DashboardController extends Controller
 
         $destination = Organization::findOrFail($data['organization_id']);
 
-        abort_unless($destination->roleFor($request->user()) === 'owner', 403);
+        Gate::authorize('own', $destination);
 
         $project->update(['organization_id' => $destination->id]);
 
@@ -188,7 +199,7 @@ class DashboardController extends Controller
     public function destroy(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $request->validate([
             'confirm_name' => ['required', 'string'],
@@ -223,7 +234,7 @@ class DashboardController extends Controller
     public function rotateKey(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $project->update(['public_key' => Str::random(32)]);
 

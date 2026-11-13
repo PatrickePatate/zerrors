@@ -1,0 +1,1183 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_connect_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_dns_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_download_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_response_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_ssl_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$avg_ttfb_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\MonitorCheck\:\:\$up_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/CompactMonitorChecks.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: \(array\<string, mixed\>\|null\), Closure\(App\\Models\\FaultProject\)\: \(array\<string, mixed\>\|null\) given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Console/Commands/SendDigests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/TriageIssues.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/GithubWebhookController.php
+
+		-
+			message: '#^Parameter \#1 \$organization of method App\\Support\\Fault\\IssueWorkflow\:\:resolve\(\) expects App\\Models\\Organization, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/GithubWebhookController.php
+
+		-
+			message: '#^Parameter \#1 \$organization of method App\\Support\\Fault\\IssueWorkflow\:\:unresolve\(\) expects App\\Models\\Organization, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/GithubWebhookController.php
+
+		-
+			message: '#^Parameter \#1 \$release of method App\\Http\\Controllers\\Api\\GithubWebhookController\:\:storeCommits\(\) expects App\\Models\\Release, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/GithubWebhookController.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: mixed$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Http/Controllers/Api/IssueApiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/ReleaseApiController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, release\: string, name\: string, size\: int, sha1\: string, created_at\: string\|null\}, Closure\(App\\Models\\SourceMap\)\: array\{id\: int, release\: string, name\: string, size\: int, sha1\: string, created_at\: string\|null\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/SourceMapApiController.php
+
+		-
+			message: '#^Parameter \#1 \$map of method App\\Http\\Controllers\\Api\\SourceMapApiController\:\:present\(\) expects App\\Models\\SourceMap, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/SourceMapApiController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/LoginController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:users\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/RegisterController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notificationChannels\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Fault/DashboardController.php
+
+		-
+			message: '#^Parameter \#2 \$data of job class App\\Jobs\\Fault\\ProcessFaultAttachment constructor expects array\{event_id\: string, filename\: string, content_type\: string\|null, attachment_type\: string\|null, size\: int, path\: string\} in App\\Jobs\\Fault\\ProcessFaultAttachment\:\:dispatch\(\), array\{path\: string\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Fault/IngestController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$before_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Fault/IssueController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Fault/IssueController.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: mixed$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Http/Controllers/Fault/IssueController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Fault\\IssueController\:\:eventNavigation\(\) should return array\{oldest\: App\\Models\\FaultEvent\|null, newest\: App\\Models\\FaultEvent\|null, previous\: App\\Models\\FaultEvent\|null, next\: App\\Models\\FaultEvent\|null, position\: int, total\: int\} but returns array\{oldest\: Illuminate\\Database\\Eloquent\\Model\|null, newest\: Illuminate\\Database\\Eloquent\\Model\|null, previous\: Illuminate\\Database\\Eloquent\\Model\|null, next\: Illuminate\\Database\\Eloquent\\Model\|null, position\: int, total\: int\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Fault/IssueController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Fault\\IssueController\:\:resolveEvent\(\) should return App\\Models\\FaultEvent\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Fault/IssueController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$project\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Fault/PublicIssueController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:events\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Http/Controllers/Fault/PublicIssueController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Fault/ReleaseController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/MonitorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MonitorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/MonitorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$token\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:users\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Parameter \#1 \$invite of class App\\Mail\\OrganizationInviteMail constructor expects App\\Models\\OrganizationInvite, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Organization/InviteController.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventDetailResource\:\:\$culprit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventDetailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventDetailResource\:\:\$payload\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventDetailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventDetailResource\:\:\$server_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventDetailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventDetailResource\:\:\$transaction\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventDetailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$environment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$event_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$level\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$occurred_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultEventResource\:\:\$release\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultEventResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$assigned_to_user_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$culprit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$first_seen_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$last_seen_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$level\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$times_seen\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultIssueResource\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultIssueResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultProjectResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultProjectResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultProjectResource\:\:\$platform\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\FaultProjectResource\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/FaultProjectResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\OrganizationResource\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/OrganizationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$commit_author\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$commit_message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$commit_sha\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$commit_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$deployed_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ReleaseResource\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ReleaseResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/Fault/TriageFaultIssue.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/Fault/TriageFaultIssue.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Listeners/ManageStatusIncidents.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Listeners/ManageStatusIncidents.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:incidents\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Listeners/ManageStatusIncidents.php
+
+		-
+			message: '#^Parameter \#1 \$page of static method App\\Support\\Status\\StatusPageData\:\:forget\(\) expects App\\Models\\StatusPage, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Listeners/ManageStatusIncidents.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:users\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Listeners/SendMonitorStatusChangeNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/CommandPalette.php
+
+		-
+			message: '#^Method App\\Livewire\\CommandPalette\:\:matchingProjects\(\) should return Illuminate\\Support\\Collection\<int, array\{label\: string, subtitle\: string, url\: string, icon\: string\}\> but returns Illuminate\\Support\\Collection\<int, array\{label\: mixed, subtitle\: string, url\: string, icon\: string\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Livewire/CommandPalette.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Livewire/CommandPalette.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Livewire/IssueAnalysis.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$visibility\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/IssueShareModal.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/IssueTriage.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/MembersManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MembersManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$token\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MembersManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$digest_frequency\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MembersManager.php
+
+		-
+			message: '#^Parameter \#1 \$invite of class App\\Mail\\OrganizationInviteMail constructor expects App\\Models\\OrganizationInvite, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Livewire/MembersManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_connect_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_dns_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_download_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_response_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_ssl_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avg_ttfb_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$checked_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$connect_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$dns_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$download_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$health_checks\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$response_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ssl_time_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ttfb_ms\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:uptimePercentage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Livewire/MonitorDetail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$enabled\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$rules\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thresholds\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:spikeSettings\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Method App\\Livewire\\NotificationChannelManager\:\:findChannel\(\) should return App\\Models\\NotificationChannel but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Livewire/NotificationChannelManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:rules\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Livewire/ProjectCreationWizard.php
+
+		-
+			message: '#^Property App\\Livewire\\ProjectCreationWizard\:\:\$project \(App\\Models\\FaultProject\|null\) does not accept Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Livewire/ProjectCreationWizard.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Livewire/ProjectIssueList.php
+
+		-
+			message: '#^Method App\\Livewire\\ProjectIssueList\:\:selectedIssues\(\) should return Illuminate\\Support\\Collection\<int, App\\Models\\FaultIssue\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Livewire/ProjectIssueList.php
+
+		-
+			message: '#^Parameter \#1 \$issue of method App\\Livewire\\ProjectIssueList\:\:applyStatus\(\) expects App\\Models\\FaultIssue, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Livewire/ProjectIssueList.php
+
+		-
+			message: '#^Parameter \#2 \$issue of method App\\Support\\Fault\\IssueWorkflow\:\:assign\(\) expects App\\Models\\FaultIssue, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Livewire/ProjectIssueList.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:incidents\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:monitors\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Parameter \#1 \$page of static method App\\Support\\Status\\StatusPageData\:\:forget\(\) expects App\\Models\\StatusPage, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Parameter \#1 \$page of static method App\\Support\\Status\\StatusPageData\:\:forget\(\) expects App\\Models\\StatusPage, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Livewire/StatusPageManager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Mail/OrganizationInviteMail.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$platform\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/FaultEvent.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$github_installation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/FaultProject.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>github_installation_id" in empty\(\) is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/FaultProject.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$certificate_expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Monitor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CronMonitorStatusChanged.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CronMonitorStatusChanged.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/Fault/IssueAlertNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/Fault/IssueAlertNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/Fault/IssueCreatedNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/Fault/IssueCreatedNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/Fault/IssueRegressedNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/Fault/IssueRegressedNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/MonitorStatusChanged.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Observers/FaultIssueTriageObserver.php
+
+		-
+			message: '#^Method App\\Services\\Monitoring\\MonitorCheckRunner\:\:run\(\) should return App\\Models\\MonitorCheck but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Monitoring/MonitorCheckRunner.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$exception\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Ai/IssueAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Ai/IssueAnalyzer.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$environment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Ai/IssueTriager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$exception\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Ai/IssueTriager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Ai/IssueTriager.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:handled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Ai/IssueTriager.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>environment" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/Ai/IssueTriager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$max_runtime\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/CronMonitorTracker.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/CronMonitorTracker.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/CronMonitorTracker.php
+
+		-
+			message: '#^Parameter \#1 \$monitor of method App\\Support\\Fault\\CronMonitorTracker\:\:notifyOnTransition\(\) expects App\\Models\\CronMonitor, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Fault/CronMonitorTracker.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$github_repo\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/GithubCommitFetcher.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/GithubCommitFetcher.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasGithubConfigured\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/GithubCommitFetcher.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$github_repo\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/GithubIssueCreator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/GithubIssueCreator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Support/Fault/GithubIssueCreator.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasGithubConfigured\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/GithubIssueCreator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$github_repo\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/GithubIssueSync.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Support/Fault/GithubIssueSync.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasGithubConfigured\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/GithubIssueSync.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization\.$#'
+			identifier: property.notFound
+			count: 7
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$organization_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$trigger\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:matchesOccurrence\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notificationChannels\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:spikeSettings\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:contains\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|Illuminate\\Database\\Eloquent\\Model\|int\|string, Closure\(App\\Models\\NotificationRule\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Fault/IssueAlertNotifier.php
+
+		-
+			message: '#^Parameter \#1 \$keys of method Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\),App\\Models\\FaultIssue\>\:\:except\(\) expects array\<mixed\>\|null, int\<0, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Fault/IssueMerger.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Support/Fault/IssueMerger.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>first_seen_at" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/Fault/IssueMerger.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>first_seen_release" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/Fault/IssueMerger.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$tags\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/IssueTagFacets.php
+
+		-
+			message: '#^Parameter \#2 \$lookup of static method App\\Support\\Fault\\SourceMapDecoder\:\:decodeVlq\(\) expects array\<string, int\>, array\<int\|string, int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Fault/SourceMapDecoder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$payload\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Fault/SuspectCommitFinder.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: \(App\\Models\\ReleaseCommit\|null\), Closure\(App\\Models\\ReleaseCommit\)\: \(App\\Models\\ReleaseCommit\|null\) given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Fault/SuspectCommitFinder.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Support/Net/OutboundUrlGuard.php
+
+		-
+			message: '#^Method App\\Support\\Organization\\AuditLogger\:\:log\(\) should return App\\Models\\AuditLog but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Support/Organization/AuditLogger.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Monitor\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$body\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$day\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$total_checks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$up_count\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\<string, mixed\>, Closure\(App\\Models\\Monitor\)\: array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\<string, mixed\>, Closure\(App\\Models\\StatusIncident\)\: array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Support/Status/StatusPageData.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\StatusIncident\)\: bool given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Support/Status/StatusPageData.php

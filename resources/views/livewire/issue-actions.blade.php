@@ -1,24 +1,43 @@
 <div>
     <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex gap-2">
-            <x-button type="button" wire:click="updateStatus('resolved')" wire:loading.attr="disabled">
-                <x-lucide-check class="h-4 w-4" />
-                Resolve
-            </x-button>
-            <x-button type="button" wire:click="updateStatus('ignored')" wire:loading.attr="disabled" variant="secondary">
-                <x-lucide-eye-off class="h-4 w-4" />
-                Ignore
-            </x-button>
+            @can('write', $organization)
+            <x-dropdown>
+                <x-slot:trigger>
+                    <x-button type="button">
+                        <x-lucide-check class="h-4 w-4" />
+                        Resolve
+                        <x-lucide-chevron-down class="h-3.5 w-3.5" />
+                    </x-button>
+                </x-slot:trigger>
+                <button type="button" wire:click="updateStatus('resolved')" class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">Resolve</button>
+                <button type="button" wire:click="updateStatus('resolved', 'next')" class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">Resolve in next release</button>
+                @if($hasReleases)
+                    <button type="button" wire:click="updateStatus('resolved', 'current')" class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">Resolve in current release</button>
+                @endif
+            </x-dropdown>
+            <x-dropdown>
+                <x-slot:trigger>
+                    <x-button type="button" variant="secondary">
+                        <x-lucide-eye-off class="h-4 w-4" />
+                        Ignore&hellip;
+                    </x-button>
+                </x-slot:trigger>
+                @foreach(\App\Support\Fault\IssueWorkflow::IGNORE_OPTIONS as $key => $label)
+                    <button type="button" wire:click="updateStatus('ignored', '{{ $key }}')" class="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100">{{ $label }}</button>
+                @endforeach
+            </x-dropdown>
             <x-button type="button" wire:click="updateStatus('unresolved')" wire:loading.attr="disabled" variant="secondary">
                 <x-lucide-rotate-ccw class="h-4 w-4" />
                 Unresolve
             </x-button>
+            @endcan
             @if($issue->github_issue_url)
                 <a href="{{ $issue->github_issue_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:underline">
                     <x-lucide-github class="h-4 w-4" />
                     GitHub issue #{{ $issue->github_issue_number }}
                 </a>
-            @elseif($project->hasGithubConfigured())
+            @elseif($project->hasGithubConfigured() && auth()->user()?->can('write', $organization))
                 <button type="button" wire:click="createGithubIssue" wire:loading.attr="disabled"
                         class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50">
                     <x-lucide-github class="h-4 w-4" />
@@ -30,6 +49,9 @@
 
         <div class="flex items-center gap-2">
             <span class="text-sm text-gray-500">Assigned to</span>
+            @cannot('write', $organization)
+                <span class="text-sm text-gray-700">{{ $members->firstWhere('id', $assignedToUserId)?->name ?? 'Unassigned' }}</span>
+            @else
             <div class="w-40">
                 <x-form.select id="assignedToUserId" wire:model.live="assignedToUserId"
                                :options="['' => 'Unassigned'] + $members->pluck('name', 'id')->all()"
@@ -37,6 +59,7 @@
                                :selected="$assignedToUserId"
                                :error="$errors->first('assignedToUserId')" />
             </div>
+            @endcannot
         </div>
     </div>
 

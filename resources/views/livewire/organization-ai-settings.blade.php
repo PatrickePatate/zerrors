@@ -33,6 +33,36 @@
             The deeper analysis reuses the model above unless you set a different (e.g. more capable) one just for it.
         </p>
 
+        <div class="mt-6 border-t border-gray-100 pt-4">
+            <h3 class="mb-1 text-sm font-medium text-gray-700">Automatic triage</h3>
+            <p class="mb-3 text-sm text-gray-500">
+                Classify each new issue (category and priority) in the background through OpenRouter.
+            </p>
+            <form wire:submit="save" class="flex flex-wrap items-end gap-3">
+                <div class="w-full">
+                    <x-form.checkbox wire:model="aiTriageEnabled">Triage new issues automatically</x-form.checkbox>
+                </div>
+                <div class="w-64">
+                    <x-form.text-input label="Triage model" name="aiTriageModel" wire:model="aiTriageModel"
+                                       :error="$errors->first('aiTriageModel')" />
+                </div>
+                @if($aiProvider !== 'openrouter')
+                    <div class="max-w-xs flex-1">
+                        <x-form.text-input label="OpenRouter API key" type="password" name="aiTriageApiKey" wire:model="aiTriageApiKey" autocomplete="off"
+                                           placeholder="{{ $organization->ai_triage_api_key ? 'Configured — leave blank to keep it' : 'sk-or-...' }}"
+                                           :error="$errors->first('aiTriageApiKey')" />
+                    </div>
+                @endif
+                <x-button type="submit" wire:loading.attr="disabled">Save</x-button>
+            </form>
+            <p class="mt-2 text-xs text-gray-500">
+                The model ID is sent to OpenRouter as-is; if it is wrong, triage fails and the error is shown on the issue.
+                @if($aiProvider === 'openrouter')
+                    Your OpenRouter key above is used.
+                @endif
+            </p>
+        </div>
+
         @if($organization->hasAiConfigured())
             <button type="button" wire:click="disconnect" wire:confirm="Disconnect the AI assistant?" class="mt-3 text-sm text-red-600 hover:underline">
                 Disconnect AI assistant

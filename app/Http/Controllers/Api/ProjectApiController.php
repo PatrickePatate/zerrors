@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\FaultProjectResource;
 use App\Models\Organization;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ProjectApiController extends Controller
 {
@@ -18,6 +19,6 @@ class ProjectApiController extends Controller
 
     protected function authorizeMembership(Request $request, Organization $organization): void
     {
-        abort_unless($organization->roleFor($request->user()) !== null, 403);
+        Gate::authorize('view', $organization);
     }
 }

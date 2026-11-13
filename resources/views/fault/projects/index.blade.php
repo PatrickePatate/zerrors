@@ -6,7 +6,9 @@
     <div class="mb-6 flex items-center justify-between">
         <h1 class="text-xl font-semibold text-gray-900">Projects</h1>
 
-        <livewire:project-creation-wizard :organization="$organization" />
+        @can('write', $organization)
+            <livewire:project-creation-wizard :organization="$organization" />
+        @endcan
     </div>
 
     <x-table>

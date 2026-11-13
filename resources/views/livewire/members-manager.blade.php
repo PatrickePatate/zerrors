@@ -15,7 +15,7 @@
                 <form wire:submit="invite" class="space-y-4">
                     <x-form.text-input label="Email" name="email" type="email" wire:model="email" :error="$errors->first('email')" required autofocus />
                     <x-form.select label="Role" id="role" wire:model="role"
-                                    :options="['member' => 'Member', 'admin' => 'Admin']"
+                                    :options="['member' => 'Member', 'admin' => 'Admin', 'viewer' => 'Viewer (read-only)']"
                                     :selected="$role" />
                     <div class="flex justify-end gap-2">
                         <x-button type="button" variant="secondary" @click="open = false">Cancel</x-button>
@@ -32,6 +32,18 @@
             <code class="mt-1 block break-all rounded bg-white/60 px-2 py-1 text-xs">{{ $inviteLink }}</code>
         </div>
     @endif
+
+    <div class="mb-6 flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-5 py-3">
+        <div>
+            <h2 class="text-sm font-medium text-gray-700">Your email digest</h2>
+            <p class="text-xs text-gray-500">A summary of this organization's errors, sent to you only.</p>
+        </div>
+        <div class="w-36">
+            <x-form.select id="digest-frequency" wire:change="updateDigestFrequency($event.target.value)"
+                            :options="['none' => 'Never', 'daily' => 'Daily', 'weekly' => 'Weekly']"
+                            :selected="$digestFrequency" />
+        </div>
+    </div>
 
     <div class="mb-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
         <h2 class="border-b border-gray-100 px-5 py-3 text-sm font-medium text-gray-700">Members</h2>
@@ -60,7 +72,7 @@
                             @if($canEditRole)
                                 <div class="w-28">
                                     <x-form.select wire:change="updateRole({{ $member->id }}, $event.target.value)"
-                                                    :options="($this->myRole === 'owner' ? ['owner' => 'owner'] : []) + ['admin' => 'admin', 'member' => 'member']"
+                                                    :options="($this->myRole === 'owner' ? ['owner' => 'owner'] : []) + ['admin' => 'admin', 'member' => 'member', 'viewer' => 'viewer']"
                                                     :selected="$member->pivot->role" />
                                 </div>
                             @else

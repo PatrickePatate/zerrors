@@ -2,11 +2,14 @@
 
 namespace App\Services\Monitoring;
 
+use App\Support\Net\OutboundUrlGuard;
 use Carbon\Carbon;
 use RuntimeException;
 
 class CertificateInspector
 {
+    public function __construct(protected OutboundUrlGuard $guard) {}
+
     /**
      * Opens a TLS connection to the given URL's host and reads the peer
      * certificate's expiry. Trust is intentionally not verified here —
@@ -16,6 +19,8 @@ class CertificateInspector
      */
     public function expiresAt(string $url, int $timeoutSeconds): Carbon
     {
+        $this->guard->assertAllowedUrl($url);
+
         $host = parse_url($url, PHP_URL_HOST);
         $port = parse_url($url, PHP_URL_PORT) ?? 443;
 

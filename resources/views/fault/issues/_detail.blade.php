@@ -31,7 +31,7 @@
             </x-tooltip>
         @endif
         <div class="text-sm text-gray-400">
-            <b>{{ $issue->times_seen }}</b> events
+            <b>{{ $issue->times_seen }}</b> events &middot; <b>{{ $issue->users_affected }}</b> users
         </div>
     </div>
     <div class="text-sm text-gray-400">
@@ -45,6 +45,9 @@
             @if($issue->regressed_at) <span class="text-amber-600">Regressed {{ $issue->regressed_at->diffForHumans() }}</span> @endif
         </div>
     @endif
+    @unless($isGuest)
+        @include('fault.issues.partials.suspect-commits')
+    @endunless
 
     @unless($isGuest)
         <div class="mt-4">
@@ -129,6 +132,16 @@
 @if($isGuest)
     @include('fault.issues._ai-analysis-readonly')
 @endif
+
+@unless($isGuest)
+    @include('fault.issues.partials.triage')
+    @include('fault.issues.partials.top-tags')
+    @include('fault.issues.partials.feedback')
+    <livewire:issue-timeline :organization="$organization" :project="$project" :issue="$issue" />
+    @if($currentEvent)
+        @include('fault.issues.partials.attachments')
+    @endif
+@endunless
 
 @if($currentEvent)
     <x-card>

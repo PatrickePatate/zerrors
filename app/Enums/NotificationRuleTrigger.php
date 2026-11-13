@@ -8,6 +8,7 @@ enum NotificationRuleTrigger: string
     case Regression = 'regression';
     case EveryEvent = 'every_event';
     case OccurrenceThreshold = 'occurrence_threshold';
+    case Spike = 'spike';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum NotificationRuleTrigger: string
             self::Regression => 'Regression (resolved issue reoccurs)',
             self::EveryEvent => 'Every event',
             self::OccurrenceThreshold => 'Occurrence thresholds',
+            self::Spike => 'Spike (sudden surge in events)',
         };
     }
 }

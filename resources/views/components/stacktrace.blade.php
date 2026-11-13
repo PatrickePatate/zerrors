@@ -47,10 +47,16 @@
                                     @if($frame->functionName)
                                         <span class="text-gray-400">in {{ $frame->functionName }}()</span>
                                     @endif
+                                    @if($frame->minifiedLocation)
+                                        <span class="text-[11px] text-gray-400" title="from minified {{ $frame->minifiedLocation }}">(source map)</span>
+                                    @endif
                                 </span>
                             </button>
 
                             <div x-show="expanded" x-collapse x-cloak>
+                                @if($frame->minifiedLocation)
+                                    <p class="border-t border-gray-100 bg-gray-50 px-3 py-1 text-[11px] text-gray-400">from minified {{ $frame->minifiedLocation }}</p>
+                                @endif
                                 @if($frame->hasContext())
                                     <div class="overflow-x-auto bg-white font-mono text-xs leading-relaxed">
                                         @foreach($frame->codeLines as $codeLine)

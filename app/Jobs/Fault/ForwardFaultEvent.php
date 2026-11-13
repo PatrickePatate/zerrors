@@ -3,11 +3,13 @@
 namespace App\Jobs\Fault;
 
 use App\Models\FaultProject;
+use App\Support\Net\OutboundUrlGuard;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 use Sentry\Dsn;
 use Throwable;
 
@@ -52,6 +54,14 @@ class ForwardFaultEvent implements ShouldQueue
             return;
         }
 
+        try {
+            app(OutboundUrlGuard::class)->assertAllowedUrl($dsn->getEnvelopeApiEndpointUrl());
+        } catch (InvalidArgumentException $e) {
+            report($e);
+
+            return;
+        }
+
         $envelope = $this->buildEnvelope($dsn->getPublicKey());
 
         $authHeader = implode(', ', [
@@ -62,6 +72,7 @@ class ForwardFaultEvent implements ShouldQueue
 
         try {
             Http::timeout(5)
+                ->withoutRedirecting()
                 ->withHeaders(['X-Sentry-Auth' => $authHeader])
                 ->withBody($envelope, 'application/x-sentry-envelope')
                 ->post($dsn->getEnvelopeApiEndpointUrl());

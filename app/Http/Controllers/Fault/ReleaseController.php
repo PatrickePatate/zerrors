@@ -8,13 +8,14 @@ use App\Models\Organization;
 use App\Models\Release;
 use App\Support\Organization\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ReleaseController extends Controller
 {
     public function store(Request $request, Organization $organization, FaultProject $project)
     {
         abort_unless($project->organization_id === $organization->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $data = $request->validate([
             'version' => ['required', 'string', 'max:255'],
@@ -34,7 +35,7 @@ class ReleaseController extends Controller
     {
         abort_unless($project->organization_id === $organization->id, 404);
         abort_unless($release->fault_project_id === $project->id, 404);
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
 
         $release->delete();
 

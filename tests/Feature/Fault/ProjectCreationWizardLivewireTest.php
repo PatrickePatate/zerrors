@@ -87,4 +87,24 @@ class ProjectCreationWizardLivewireTest extends TestCase
             ->call('finish')
             ->assertRedirect(route('organizations.projects.show', [$organization, FaultProject::where('name', 'API')->sole()]));
     }
+
+    public function test_browser_platforms_show_a_browser_snippet_with_the_dsn(): void
+    {
+        $organization = Organization::factory()->create();
+        $owner = User::factory()->create();
+        $organization->users()->attach($owner->id, ['role' => 'owner']);
+
+        $component = Livewire::actingAs($owner)
+            ->test(ProjectCreationWizard::class, ['organization' => $organization])
+            ->set('name', 'Web')
+            ->set('platform', 'javascript')
+            ->call('createProject');
+
+        $project = FaultProject::where('name', 'Web')->sole();
+        $steps = collect($component->instance()->tutorialSteps());
+
+        $this->assertStringContainsString('@sentry/browser', $steps->pluck('code')->implode("\n"));
+        $this->assertStringContainsString($project->public_key, $steps->pluck('code')->implode("\n"));
+        $this->assertStringContainsString('/sourcemaps', $steps->last()['code']);
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Organization;
 use App\Support\Slack\SlackAppClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class SlackAppController extends Controller
 {
@@ -59,6 +60,6 @@ class SlackAppController extends Controller
 
     protected function authorizeManage(Request $request, Organization $organization): void
     {
-        abort_unless(in_array($organization->roleFor($request->user()), ['owner', 'admin'], true), 403);
+        Gate::authorize('manage', $organization);
     }
 }

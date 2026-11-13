@@ -28,6 +28,11 @@
                     Monitoring
                 </x-button>
 
+                <x-button tag="a" href="{{ route('organizations.crons.index', [$organization, $project]) }}" variant="secondary">
+                    <x-lucide-timer class="h-4 w-4" />
+                    Cron jobs
+                </x-button>
+
                 <x-modal max-width="lg">
                     <x-slot:trigger>
                         <x-button type="button" variant="secondary">
@@ -90,7 +95,7 @@
 
                 @if(in_array($organization->roleFor(auth()->user()), ['owner', 'admin']))
                     <x-modal
-                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('production_branch') || $errors->has('forward_dsn') || $errors->has('censored_headers')"
+                        :open-on-error="$errors->has('platform') || $errors->has('github_repo') || $errors->has('production_branch') || $errors->has('retention_days') || $errors->has('forward_dsn') || $errors->has('censored_headers')"
                         max-width="lg"
                     >
                         <x-slot:trigger>
@@ -140,6 +145,11 @@
                                     <div>
                                         <x-form.text-input label="Production branch" name="production_branch" value="{{ $project->production_branch }}" placeholder="main" :error="$errors->first('production_branch')" />
                                         <p class="mt-1 text-xs text-gray-400">The branch a release is recorded for when GitHub pushes to it.</p>
+                                    </div>
+
+                                    <div>
+                                        <x-form.text-input label="Event retention (days)" name="retention_days" type="number" min="0" max="3650" value="{{ old('retention_days', $project->retention_days) }}" :error="$errors->first('retention_days')" />
+                                        <p class="mt-1 text-xs text-gray-400">Events older than this are deleted daily. Use 0 to keep events forever.</p>
                                     </div>
 
                                     <div class="flex justify-end gap-2">
@@ -254,6 +264,31 @@
                 @endif
             </div>
         </div>
+    </x-card>
+
+    @php
+        $sourceMapReleases = $project->sourceMaps()
+            ->selectRaw('release, count(*) as maps_count, sum(size) as total_size')
+            ->groupBy('release')->orderByDesc('release')->limit(10)->get();
+        $sourceMapUploadUrl = url('/api/v1/organizations/'.$organization->slug.'/projects/'.$project->slug.'/releases/RELEASE/sourcemaps');
+        $sourceMapCurl = 'curl -X POST -H "Authorization: Bearer $TOKEN" -F name="~/assets/app.js" -F file=@dist/assets/app.js.map '.$sourceMapUploadUrl;
+    @endphp
+    <x-card class="mb-6">
+        <h2 class="text-sm font-medium text-gray-700">Source maps</h2>
+        @if($sourceMapReleases->isEmpty())
+            <p class="mt-1 text-sm text-gray-500">No source maps uploaded yet. Upload them per release to get readable JavaScript stack traces.</p>
+        @else
+            <ul class="mt-2 divide-y divide-gray-100 text-sm">
+                @foreach($sourceMapReleases as $sourceMapRelease)
+                    <li class="flex items-center justify-between py-1.5">
+                        <span class="font-mono text-gray-700">{{ $sourceMapRelease->release }}</span>
+                        <span class="text-gray-500">{{ $sourceMapRelease->maps_count }} {{ \Illuminate\Support\Str::plural('map', $sourceMapRelease->maps_count) }} &middot; {{ \Illuminate\Support\Number::fileSize((int) $sourceMapRelease->total_size) }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+        <p class="mt-3 text-xs text-gray-500">Upload with an API token that has the write ability (owner or admin):</p>
+        <x-credential class="mt-1 w-full" :value="$sourceMapCurl" />
     </x-card>
 
     <livewire:project-issue-list :organization="$organization" :project="$project" />
