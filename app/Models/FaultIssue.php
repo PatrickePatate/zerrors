@@ -58,6 +58,8 @@ class FaultIssue extends Model
      * The most recent event, for surfacing per-event details (Livewire/queue/bot
      * detection) on the issue without loading the full event history. Safe to
      * eager-load with a column-limited constraint to avoid an N+1 on issue lists.
+     *
+     * @return HasOne<FaultEvent, $this>
      */
     public function latestEvent(): HasOne
     {
