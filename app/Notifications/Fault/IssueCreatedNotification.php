@@ -3,6 +3,7 @@
 namespace App\Notifications\Fault;
 
 use App\Models\FaultIssue;
+use App\Notifications\Fault\Concerns\DescribesIssueInMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -10,7 +11,7 @@ use Illuminate\Notifications\Notification;
 
 class IssueCreatedNotification extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use DescribesIssueInMail, Queueable;
 
     public function __construct(public FaultIssue $issue) {}
 
@@ -31,8 +32,7 @@ class IssueCreatedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("New issue in {$project->name}: {$issue->title}")
             ->line("A new issue was just reported in **{$project->name}** ({$organization->name}).")
-            ->line("**{$issue->title}**")
-            ->when($issue->culprit, fn ($mail) => $mail->line($issue->culprit))
+            ->lines($this->issueMailLines($issue))
             ->action('View issue', route('organizations.issues.show', [$organization, $project, $issue]))
             ->line('You are receiving this because alert emails are enabled for this organization.');
     }

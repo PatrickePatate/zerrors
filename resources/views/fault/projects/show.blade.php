@@ -266,6 +266,7 @@
         </div>
     </x-card>
 
+    @if($project->platform->isJavaScript())
     @php
         $sourceMapReleases = $project->sourceMaps()
             ->select('release')->selectRaw('count(*) as maps_count, sum(size) as total_size')
@@ -290,6 +291,7 @@
         <p class="mt-3 text-xs text-gray-500">Upload with an API token that has the write ability (owner or admin):</p>
         <x-credential class="mt-1 w-full" :value="$sourceMapCurl" />
     </x-card>
+    @endif
 
     <livewire:project-issue-list :organization="$organization" :project="$project" />
 @endsection
